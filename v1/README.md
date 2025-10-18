@@ -2,6 +2,10 @@
 
 A comprehensive web application for monitoring Red Hat Advanced Cluster Management (RHACM) Global Hub deployments with managed hubs and spoke clusters.
 
+## Demo
+
+📹 **[Watch Application Demo](screen-capture.webm)** - See the application in action
+
 ## Quick Links
 
 - **[Quick Start Guide](QUICKSTART.md)** - Get started in 5 minutes

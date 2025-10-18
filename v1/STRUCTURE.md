@@ -103,3 +103,19 @@ frontend/dist/               Built frontend
 ---
 
 **Clean, organized structure for easy navigation and maintenance!**
+
+## Demo and Screenshots
+
+```
+screen-capture.webm          Video demonstration of the application
+```
+
+The demo video shows:
+- Complete application workflow
+- All major features in action
+- UI/UX demonstration
+- Real cluster data
+
+---
+
+**Updated**: October 18, 2025

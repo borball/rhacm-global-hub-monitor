@@ -15,6 +15,17 @@ A production-ready web application for monitoring Red Hat Advanced Cluster Manag
 **Deployment**: Live on vhub.outbound.vz.bos2.lab  
 **URL**: https://hubs-rhacm-monitor.apps.vhub.outbound.vz.bos2.lab
 
+## Demo
+
+📹 **[Watch Application Demo](v1/screen-capture.webm)** - See the application in action
+
+The demo shows:
+- Dashboard with hub statistics
+- Hub details with spokes, nodes, and policies
+- Spoke cluster monitoring with hardware inventory
+- Policy management with search, filter, and YAML download
+- Complete workflow and UI features
+
 ## Features
 
 ✅ **Complete Monitoring**
