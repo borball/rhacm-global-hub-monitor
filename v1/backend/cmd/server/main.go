@@ -48,12 +48,14 @@ func main() {
 	hubHandler := handlers.NewHubHandler(rhacmClient)
 	healthHandler := handlers.NewHealthHandler()
 	policyHandler := handlers.NewPolicyHandler(kubeClient, rhacmClient)
+	cguHandler := handlers.NewCGUHandler(kubeClient, rhacmClient)
 
 	// Setup router
 	router := api.SetupRouter(
 		hubHandler,
 		healthHandler,
 		policyHandler,
+		cguHandler,
 		jwtValidator,
 		cfg.EnableAuth,
 		cfg.CORSOrigins,

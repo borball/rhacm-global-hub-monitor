@@ -89,6 +89,10 @@ function renderHubsList(hubs) {
                     <span class="value">${hub.clusterInfo.platform || 'N/A'}</span>
                 </div>
                 <div class="info-row">
+                    <span class="label">Configuration:</span>
+                    <span class="value"><code style="background: #e7f4f9; padding: 2px 8px; border-radius: 4px; color: #0066cc; font-size: 12px;">${hub.clusterInfo.region || 'N/A'}</code></span>
+                </div>
+                <div class="info-row">
                     <span class="label">Spoke Clusters:</span>
                     <span class="value"><span class="badge">${spokeCount}</span></span>
                 </div>
@@ -194,6 +198,10 @@ function renderHubOverview(hub) {
             <div class="info-row"><span class="label">Kubernetes Version:</span> <span class="value">${hub.version || 'N/A'}</span></div>
             <div class="info-row"><span class="label">OpenShift Version:</span> <span class="value">${hub.clusterInfo.openshiftVersion || 'N/A'}</span></div>
             <div class="info-row"><span class="label">Platform:</span> <span class="value">${hub.clusterInfo.platform || 'N/A'}</span></div>
+            <div class="info-row">
+                <span class="label">Configuration Version:</span>
+                <span class="value"><strong style="color: #0066cc; background: #e7f4f9; padding: 4px 12px; border-radius: 4px; font-size: 14px;">${hub.clusterInfo.region || 'N/A'}</strong></span>
+            </div>
             <div class="info-row"><span class="label">Cluster ID:</span> <span class="value"><small style="font-family: monospace;">${hub.clusterInfo.clusterID}</small></span></div>
             ${hub.clusterInfo.consoleURL ? `
             <div class="info-row">
@@ -214,20 +222,26 @@ function renderSpokes(spokes, hubName) {
     
     let html = `
         <div class="card" style="margin-bottom: 20px; padding: 20px;">
-            <div style="display: flex; gap: 15px; align-items: center;">
-                <div style="flex: 1;">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr) auto; gap: 15px; align-items: end;">
+                <div>
                     <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #6a6e73;">🔍 Search by Cluster Name</label>
                     <input type="text" id="search-cluster-name" placeholder="Enter cluster name..." 
                            style="width: 100%; padding: 10px; border: 1px solid #d2d2d2; border-radius: 4px; font-size: 14px;"
                            onkeyup="filterSpokes()">
                 </div>
-                <div style="flex: 1;">
+                <div>
                     <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #6a6e73;">🏷️ Search by Version</label>
                     <input type="text" id="search-version" placeholder="e.g., 4.18.13..." 
                            style="width: 100%; padding: 10px; border: 1px solid #d2d2d2; border-radius: 4px; font-size: 14px;"
                            onkeyup="filterSpokes()">
                 </div>
-                <div style="padding-top: 28px;">
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #6a6e73;">⚙️ Search by Configuration</label>
+                    <input type="text" id="search-configuration" placeholder="e.g., vdu2-4.18..." 
+                           style="width: 100%; padding: 10px; border: 1px solid #d2d2d2; border-radius: 4px; font-size: 14px;"
+                           onkeyup="filterSpokes()">
+                </div>
+                <div>
                     <button class="btn btn-secondary" onclick="clearSpokeSearch()" style="padding: 10px 20px;">
                         ✕ Clear
                     </button>
@@ -245,6 +259,7 @@ function renderSpokes(spokes, hubName) {
                         <th>Cluster Name</th>
                         <th>Status</th>
                         <th>OpenShift</th>
+                        <th>Configuration</th>
                         <th>Platform</th>
                         <th>Nodes</th>
                         <th>Policies</th>
@@ -262,10 +277,11 @@ function renderSpokes(spokes, hubName) {
         const spokeDetailId = `spoke-detail-${spokeIndex}`;
         
         html += `
-            <tr class="spoke-row" data-cluster-name="${spoke.name.toLowerCase()}" data-version="${(spoke.clusterInfo.openshiftVersion || '').toLowerCase()}">
+            <tr class="spoke-row" data-cluster-name="${spoke.name.toLowerCase()}" data-version="${(spoke.clusterInfo.openshiftVersion || '').toLowerCase()}" data-configuration="${(spoke.clusterInfo.region || '').toLowerCase()}">
                 <td><strong>${spoke.name}</strong></td>
                 <td><span class="status ${statusClass}">${spoke.status}</span></td>
                 <td>${spoke.clusterInfo.openshiftVersion || 'N/A'}</td>
+                <td><code style="background: #e7f4f9; padding: 2px 8px; border-radius: 4px; color: #0066cc; font-size: 12px;">${spoke.clusterInfo.region || 'N/A'}</code></td>
                 <td>${spoke.clusterInfo.platform || 'N/A'}</td>
                 <td><span class="badge">${nodeCount}</span></td>
                 <td><span class="badge ${compliantPolicies === policyCount ? 'success' : 'warning'}">${compliantPolicies}/${policyCount}</span></td>
@@ -276,7 +292,7 @@ function renderSpokes(spokes, hubName) {
                 </td>
             </tr>
             <tr id="${spokeDetailId}" class="spoke-detail-row" style="display: none;">
-                <td colspan="7" style="background: #f9f9f9; padding: 0;">
+                <td colspan="8" style="background: #f9f9f9; padding: 0;">
                     ${renderSpokeDetails(spoke, hubName)}
                 </td>
             </tr>
@@ -309,95 +325,71 @@ function renderSpokeDetails(spoke, hubName) {
     const compliantPolicies = (spoke.policiesInfo || []).filter(p => p.complianceState === 'Compliant').length;
     
     return `
-        <div style="padding: 20px;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-                <div>
-                    <h4 style="color: #0066cc; margin-bottom: 15px;">Cluster Information</h4>
-                    <div class="info-row">
-                        <span class="label">Name:</span>
-                        <span class="value">${spoke.name}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">Type:</span>
-                        <span class="value">Single Node OpenShift (SNO)</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">Status:</span>
-                        <span class="value"><span class="status ${spoke.status.toLowerCase().includes('ready') ? 'ready' : 'notready'}">${spoke.status}</span></span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">Kubernetes:</span>
-                        <span class="value">${spoke.version || 'N/A'}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">OpenShift:</span>
-                        <span class="value">${spoke.clusterInfo.openshiftVersion || 'N/A'}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">Platform:</span>
-                        <span class="value">${spoke.clusterInfo.platform || 'N/A'}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">Cluster ID:</span>
-                        <span class="value"><code style="font-size: 11px;">${spoke.clusterInfo.clusterID}</code></span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">Created:</span>
-                        <span class="value">${new Date(spoke.createdAt).toLocaleString()}</span>
-                    </div>
+        <div style="padding: 15px;">
+            <!-- Compact Info Grid -->
+            <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 15px;">
+                <div style="padding: 10px; background: white; border-radius: 4px; border: 1px solid #d2d2d2;">
+                    <div style="font-size: 10px; color: #6a6e73; text-transform: uppercase;">Type</div>
+                    <div style="font-size: 13px; font-weight: 600;">SNO</div>
                 </div>
-                <div>
-                    <h4 style="color: #0066cc; margin-bottom: 15px;">Policy Compliance</h4>
-                    <div style="text-align: center; padding: 20px; background: #e7f1e7; border-radius: 8px; margin-bottom: 15px;">
-                        <div style="font-size: 2.5rem; font-weight: 700; color: #3e8635;">${compliantPolicies}/${policyCount}</div>
-                        <p style="color: #3e8635; font-weight: 600;">Policies Compliant</p>
-                    </div>
+                <div style="padding: 10px; background: white; border-radius: 4px; border: 1px solid #d2d2d2;">
+                    <div style="font-size: 10px; color: #6a6e73; text-transform: uppercase;">OpenShift</div>
+                    <div style="font-size: 13px; font-weight: 600;">${spoke.clusterInfo.openshiftVersion || 'N/A'}</div>
+                </div>
+                <div style="padding: 10px; background: white; border-radius: 4px; border: 1px solid #d2d2d2;">
+                    <div style="font-size: 10px; color: #6a6e73; text-transform: uppercase;">Kubernetes</div>
+                    <div style="font-size: 13px; font-weight: 600;">${spoke.version || 'N/A'}</div>
+                </div>
+                <div style="padding: 10px; background: white; border-radius: 4px; border: 1px solid #d2d2d2;">
+                    <div style="font-size: 10px; color: #6a6e73; text-transform: uppercase;">Platform</div>
+                    <div style="font-size: 13px; font-weight: 600;">${spoke.clusterInfo.platform || 'N/A'}</div>
+                </div>
+                <div style="padding: 10px; background: #e7f4f9; border-radius: 4px; border: 1px solid #0066cc;">
+                    <div style="font-size: 10px; color: #0066cc; text-transform: uppercase;">Config</div>
+                    <div style="font-size: 13px; font-weight: 600;">${spoke.clusterInfo.region || 'N/A'}</div>
+                </div>
+                <div style="padding: 10px; background: #e7f1e7; border-radius: 4px; border: 1px solid #3e8635;">
+                    <div style="font-size: 10px; color: #3e8635; text-transform: uppercase;">Policies</div>
+                    <div style="font-size: 20px; font-weight: 700; color: #3e8635;">${compliantPolicies}/${policyCount}</div>
                 </div>
             </div>
             
             ${(spoke.nodesInfo && spoke.nodesInfo.length > 0) ? `
-            <div style="margin-bottom: 20px;">
-                <h4 style="color: #0066cc; margin-bottom: 15px;">Hardware Inventory</h4>
-                ${renderSpokeHardware(spoke.nodesInfo)}
+            <div style="margin-bottom: 15px;">
+                <h4 style="color: #0066cc; margin-bottom: 10px; font-size: 15px;">💻 Hardware Inventory</h4>
+                ${renderSpokeHardwareCompact(spoke.nodesInfo)}
             </div>
             ` : ''}
             
             ${policyCount > 0 ? `
             <div>
-                <h4 style="color: #0066cc; margin-bottom: 15px;">All Policies (${policyCount})</h4>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h4 style="color: #0066cc; margin: 0; font-size: 15px;">📋 Policies (${policyCount} total, ${compliantPolicies} compliant)</h4>
+                </div>
                 
-                <div style="margin-bottom: 20px; padding: 15px; background: white; border-radius: 6px; border: 1px solid #d2d2d2;">
-                    <div style="display: flex; gap: 15px; align-items: center;">
+                <div style="margin-bottom: 15px; padding: 12px; background: white; border-radius: 4px; border: 1px solid #d2d2d2;">
+                    <div style="display: flex; gap: 12px; align-items: center;">
                         <div style="flex: 1;">
-                            <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #6a6e73; font-size: 13px;">🔍 Search Policy</label>
-                            <input type="text" id="search-spoke-policy-name" placeholder="Enter policy name..." 
+                            <input type="text" id="search-spoke-policy-name" placeholder="🔍 Search policy name..." 
                                    style="width: 100%; padding: 8px; border: 1px solid #d2d2d2; border-radius: 4px; font-size: 13px;"
                                    onkeyup="filterSpokePolicies()">
                         </div>
-                        <div style="flex: 1;">
-                            <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #6a6e73; font-size: 13px;">✅ Compliance</label>
-                            <div style="display: flex; gap: 12px; align-items: center;">
-                                <label style="display: flex; align-items: center; cursor: pointer; font-size: 13px;">
-                                    <input type="radio" name="spoke-compliance-filter" value="" checked onchange="filterSpokePolicies()" style="margin-right: 4px;">
-                                    All
-                                </label>
-                                <label style="display: flex; align-items: center; cursor: pointer; font-size: 13px;">
-                                    <input type="radio" name="spoke-compliance-filter" value="compliant" onchange="filterSpokePolicies()" style="margin-right: 4px;">
-                                    <span style="color: #3e8635;">Compliant</span>
-                                </label>
-                                <label style="display: flex; align-items: center; cursor: pointer; font-size: 13px;">
-                                    <input type="radio" name="spoke-compliance-filter" value="noncompliant" onchange="filterSpokePolicies()" style="margin-right: 4px;">
-                                    <span style="color: #c9190b;">NonCompliant</span>
-                                </label>
-                            </div>
+                        <div style="display: flex; gap: 10px;">
+                            <label style="display: flex; align-items: center; cursor: pointer; font-size: 13px;">
+                                <input type="radio" name="spoke-compliance-filter" value="" checked onchange="filterSpokePolicies()" style="margin-right: 4px;">All
+                            </label>
+                            <label style="display: flex; align-items: center; cursor: pointer; font-size: 13px;">
+                                <input type="radio" name="spoke-compliance-filter" value="compliant" onchange="filterSpokePolicies()" style="margin-right: 4px;">
+                                <span style="color: #3e8635;">✓</span>
+                            </label>
+                            <label style="display: flex; align-items: center; cursor: pointer; font-size: 13px;">
+                                <input type="radio" name="spoke-compliance-filter" value="noncompliant" onchange="filterSpokePolicies()" style="margin-right: 4px;">
+                                <span style="color: #c9190b;">✗</span>
+                            </label>
                         </div>
-                        <div style="padding-top: 28px;">
-                            <button class="btn btn-secondary" onclick="clearSpokePolicySearch()" style="padding: 8px 16px; font-size: 13px;">
-                                ✕ Clear
-                            </button>
-                        </div>
+                        <button class="btn btn-secondary" onclick="clearSpokePolicySearch()" style="padding: 6px 12px; font-size: 12px;">✕</button>
                     </div>
-                    <div id="spoke-policy-count" style="margin-top: 10px; color: #6a6e73; font-size: 13px;">
+                    <div id="spoke-policy-count" style="margin-top: 8px; color: #6a6e73; font-size: 12px;">
                         Showing ${policyCount} ${policyCount !== 1 ? 'policies' : 'policy'}
                     </div>
                 </div>
@@ -413,6 +405,7 @@ function renderSpokeDetails(spoke, hubName) {
 function filterSpokes() {
     const nameSearch = document.getElementById('search-cluster-name')?.value.toLowerCase() || '';
     const versionSearch = document.getElementById('search-version')?.value.toLowerCase() || '';
+    const configSearch = document.getElementById('search-configuration')?.value.toLowerCase() || '';
     
     const rows = document.querySelectorAll('.spoke-row');
     let visibleCount = 0;
@@ -420,11 +413,13 @@ function filterSpokes() {
     rows.forEach(row => {
         const clusterName = row.getAttribute('data-cluster-name') || '';
         const version = row.getAttribute('data-version') || '';
+        const configuration = row.getAttribute('data-configuration') || '';
         
         const nameMatch = !nameSearch || clusterName.includes(nameSearch);
         const versionMatch = !versionSearch || version.includes(versionSearch);
+        const configMatch = !configSearch || configuration.includes(configSearch);
         
-        if (nameMatch && versionMatch) {
+        if (nameMatch && versionMatch && configMatch) {
             row.style.display = '';
             // Also show the detail row if it was visible
             const detailRow = row.nextElementSibling;
@@ -458,6 +453,8 @@ function filterSpokes() {
 function clearSpokeSearch() {
     document.getElementById('search-cluster-name').value = '';
     document.getElementById('search-version').value = '';
+    const configInput = document.getElementById('search-configuration');
+    if (configInput) configInput.value = '';
     filterSpokes();
 }
 
@@ -554,6 +551,54 @@ function clearSpokePolicySearch() {
     if (nameInput) nameInput.value = '';
     if (allRadio) allRadio.checked = true;
     filterSpokePolicies();
+}
+
+// Enforce policy by creating a ClusterGroupUpgrade
+async function enforcePolicyWithCGU(policy, hubName) {
+    try {
+        // Confirm action
+        const clusterName = policy.namespace;
+        const confirm = window.confirm(
+            `Create ClusterGroupUpgrade to enforce policy?\n\n` +
+            `Cluster: ${clusterName}\n` +
+            `Policy: ${policy.name}\n` +
+            `Current State: ${policy.complianceState}\n\n` +
+            `This will create a CGU resource to remediate the policy.`
+        );
+        
+        if (!confirm) return;
+        
+        // Call backend to create CGU
+        const response = await fetch(`${API_BASE}/cgu/create`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                clusterName: clusterName,
+                policyName: policy.name,
+                namespace: clusterName,
+                hubName: hubName || clusterName
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert(
+                `✅ ClusterGroupUpgrade created successfully!\n\n` +
+                `CGU Name: ${data.data.cguName}\n` +
+                `Namespace: ${data.data.namespace}\n` +
+                `Cluster: ${data.data.cluster}\n` +
+                `Policy: ${data.data.policy}\n\n` +
+                `The policy will be enforced via TALM.`
+            );
+        } else {
+            alert('❌ Failed to create CGU: ' + (data.error || 'Unknown error'));
+        }
+    } catch (error) {
+        alert('❌ Error creating CGU: ' + error.message);
+    }
 }
 
 // Download policy as YAML from the cluster
@@ -666,9 +711,14 @@ function renderSpokePolicyList(policies, hubName) {
                     <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px; margin-right: 4px;" onclick="toggleSpokePolicyDetails('${spokePolicyDetailId}')">
                         📄 Details
                     </button>
-                    <button class="btn btn-primary" style="padding: 4px 10px; font-size: 12px;" onclick='downloadPolicyYAML(${JSON.stringify(policy).replace(/'/g, "&#39;")}, "${hubName}")'>
+                    <button class="btn btn-primary" style="padding: 4px 10px; font-size: 12px; margin-right: 4px;" onclick='downloadPolicyYAML(${JSON.stringify(policy).replace(/'/g, "&#39;")}, "${hubName}")'>
                         ⬇️ YAML
                     </button>
+                    ${policy.complianceState?.toLowerCase() !== 'compliant' ? `
+                    <button class="btn" style="padding: 4px 10px; font-size: 12px; background: #f0ab00; color: white; border: none; border-radius: 4px; cursor: pointer;" onclick='enforcePolicyWithCGU(${JSON.stringify(policy).replace(/'/g, "&#39;")}, "${hubName}")'>
+                        ⚡ Enforce
+                    </button>
+                    ` : ''}
                 </td>
             </tr>
             <tr id="${spokePolicyDetailId}" style="display: none;" class="spoke-policy-detail-row">
@@ -686,7 +736,7 @@ function renderSpokePolicyList(policies, hubName) {
     return html;
 }
 
-// Render spoke hardware details
+// Render spoke hardware details (original for cards)
 function renderSpokeHardware(nodes) {
     if (nodes.length === 0) return '';
     
@@ -729,6 +779,46 @@ function renderSpokeHardware(nodes) {
                 </div>
                 ` : ''}
             </div>
+        `;
+    });
+    html += '</div>';
+    return html;
+}
+
+// Render compact hardware for detail view
+function renderSpokeHardwareCompact(nodes) {
+    if (nodes.length === 0) return '';
+    
+    let html = '<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 13px;">';
+    nodes.forEach(node => {
+        html += `
+            <div style="padding: 10px; background: #f9f9f9; border-radius: 4px;">
+                <strong>💻 CPU:</strong> ${node.capacity?.cpu || 'N/A'}
+            </div>
+            <div style="padding: 10px; background: #f9f9f9; border-radius: 4px;">
+                <strong>🧠 RAM:</strong> ${node.capacity?.memory || 'N/A'}
+            </div>
+            <div style="padding: 10px; background: #f9f9f9; border-radius: 4px;">
+                <strong>💾 Storage:</strong> ${node.capacity?.storage || 'N/A'}
+            </div>
+            <div style="padding: 10px; background: #f9f9f9; border-radius: 4px;">
+                <strong>🌐 IP:</strong> ${node.internalIP || 'N/A'}
+            </div>
+            ${node.annotations?.['bmc-address'] ? `
+            <div style="padding: 10px; background: #f9f9f9; border-radius: 4px; grid-column: 1 / -1;">
+                <strong>🔧 BMC:</strong> <code style="font-size: 11px;">${node.annotations['bmc-address']}</code>
+            </div>
+            ` : ''}
+            ${node.annotations?.manufacturer ? `
+            <div style="padding: 10px; background: #f9f9f9; border-radius: 4px;">
+                <strong>🏭 Vendor:</strong> ${node.annotations.manufacturer}
+            </div>
+            ` : ''}
+            ${node.annotations?.['serial-number'] ? `
+            <div style="padding: 10px; background: #f9f9f9; border-radius: 4px; grid-column: span 2;">
+                <strong>📋 S/N:</strong> <code>${node.annotations['serial-number']}</code>
+            </div>
+            ` : ''}
         `;
     });
     html += '</div>';
@@ -1064,9 +1154,14 @@ function renderPolicies(policies) {
                     <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 13px; margin-right: 4px;" onclick="showPolicyDetails(${index}, '${policy.name.replace(/'/g, "\\'")}')">
                         📄 Details
                     </button>
-                    <button class="btn btn-primary" style="padding: 4px 10px; font-size: 13px;" onclick='downloadPolicyYAML(${JSON.stringify(policy).replace(/'/g, "&#39;")})'>
+                    <button class="btn btn-primary" style="padding: 4px 10px; font-size: 13px; margin-right: 4px;" onclick='downloadPolicyYAML(${JSON.stringify(policy).replace(/'/g, "&#39;")})'>
                         ⬇️ YAML
                     </button>
+                    ${policy.complianceState?.toLowerCase() !== 'compliant' ? `
+                    <button class="btn" style="padding: 4px 10px; font-size: 13px; background: #f0ab00; color: white; border: none; border-radius: 4px; cursor: pointer;" onclick='enforcePolicyWithCGU(${JSON.stringify(policy).replace(/'/g, "&#39;")}, null)'>
+                        ⚡ Enforce
+                    </button>
+                    ` : ''}
                 </td>
             </tr>
             <tr id="${policyId}" class="policy-detail-row" style="display: none;">
@@ -1100,67 +1195,65 @@ function showPolicyDetails(index, policyName) {
 // Render policy details
 function renderPolicyDetails(policy) {
     return `
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
-            <div>
-                <h4 style="color: #0066cc; margin-bottom: 12px;">Policy Information</h4>
-                <div class="info-row">
-                    <span class="label">Full Name:</span>
-                    <span class="value"><code style="font-size: 12px;">${policy.name}</code></span>
+        <div>
+            <!-- Policy Info Summary Card -->
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+                <div style="padding: 15px; background: white; border-radius: 6px; border: 1px solid #d2d2d2;">
+                    <div style="font-size: 11px; color: #6a6e73; text-transform: uppercase; margin-bottom: 5px;">Namespace</div>
+                    <div style="font-size: 16px; font-weight: 600;">${policy.namespace}</div>
                 </div>
-                <div class="info-row">
-                    <span class="label">Namespace:</span>
-                    <span class="value">${policy.namespace}</span>
+                <div style="padding: 15px; background: white; border-radius: 6px; border: 1px solid #d2d2d2;">
+                    <div style="font-size: 11px; color: #6a6e73; text-transform: uppercase; margin-bottom: 5px;">Compliance</div>
+                    <div><span class="policy-badge ${policy.complianceState?.toLowerCase() === 'compliant' ? 'policy-compliant' : 'policy-noncompliant'}">${policy.complianceState || 'Unknown'}</span></div>
                 </div>
-                <div class="info-row">
-                    <span class="label">Remediation Action:</span>
-                    <span class="value"><strong>${policy.remediationAction || 'N/A'}</strong></span>
+                <div style="padding: 15px; background: white; border-radius: 6px; border: 1px solid #d2d2d2;">
+                    <div style="font-size: 11px; color: #6a6e73; text-transform: uppercase; margin-bottom: 5px;">Remediation</div>
+                    <div><span class="policy-badge ${policy.remediationAction === 'enforce' ? 'policy-enforce' : 'policy-inform'}">${policy.remediationAction || 'N/A'}</span></div>
                 </div>
-                <div class="info-row">
-                    <span class="label">Compliance State:</span>
-                    <span class="value">
-                        <span class="policy-badge ${policy.complianceState?.toLowerCase() === 'compliant' ? 'policy-compliant' : 'policy-noncompliant'}">
-                            ${policy.complianceState || 'Unknown'}
-                        </span>
-                    </span>
-                </div>
-                <div class="info-row">
-                    <span class="label">Severity:</span>
-                    <span class="value">${policy.severity || 'N/A'}</span>
-                </div>
-                <div class="info-row">
-                    <span class="label">Disabled:</span>
-                    <span class="value">${policy.disabled ? 'Yes' : 'No'}</span>
-                </div>
-                <div class="info-row">
-                    <span class="label">Violations:</span>
-                    <span class="value">${policy.violations || 0}</span>
-                </div>
-                <div class="info-row">
-                    <span class="label">Created:</span>
-                    <span class="value">${new Date(policy.createdAt).toLocaleString()}</span>
+                <div style="padding: 15px; background: white; border-radius: 6px; border: 1px solid #d2d2d2;">
+                    <div style="font-size: 11px; color: #6a6e73; text-transform: uppercase; margin-bottom: 5px;">Violations</div>
+                    <div style="font-size: 24px; font-weight: 700; color: ${policy.violations > 0 ? '#c9190b' : '#3e8635'};">${policy.violations || 0}</div>
                 </div>
             </div>
-            <div>
-                <h4 style="color: #0066cc; margin-bottom: 12px;">Compliance Standards</h4>
-                <div class="info-row">
-                    <span class="label">Standards:</span>
-                    <span class="value">
-                        ${policy.standards?.map(s => `<span class="badge" style="margin-right: 4px; background: #8b2c9b;">${s}</span>`).join('') || 'N/A'}
-                    </span>
+            
+            ${policy.annotations?.['latest-status-message'] ? `
+            <!-- Latest Status - Full Width -->
+            <div style="margin-bottom: 20px; padding: 20px; background: ${policy.complianceState?.toLowerCase() === 'compliant' ? '#e7f1e7' : '#fff4e5'}; border-left: 4px solid ${policy.complianceState?.toLowerCase() === 'compliant' ? '#3e8635' : '#f0ab00'}; border-radius: 4px;">
+                <h4 style="margin: 0 0 12px 0; color: ${policy.complianceState?.toLowerCase() === 'compliant' ? '#3e8635' : '#8b4513'}; display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 20px;">📋</span>
+                    <span>Latest Status Message</span>
+                </h4>
+                <div style="font-size: 13px; color: #6a6e73; margin-bottom: 10px;">
+                    🕐 ${policy.annotations['latest-status-timestamp'] ? new Date(policy.annotations['latest-status-timestamp']).toLocaleString() : 'Recent'}
                 </div>
-                <div class="info-row">
-                    <span class="label">Categories:</span>
-                    <span class="value">
-                        ${policy.categories?.map(c => `<span class="badge success" style="margin-right: 4px;">${c}</span>`).join('') || 'N/A'}
-                    </span>
+                <div style="font-size: 14px; line-height: 1.8; font-family: 'Courier New', monospace; background: white; padding: 15px; border-radius: 4px; max-height: 200px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;">
+${policy.annotations['latest-status-message']}
                 </div>
-                <div class="info-row">
-                    <span class="label">Controls:</span>
-                    <span class="value">
-                        ${policy.controls?.map(c => `<span class="badge" style="margin-right: 4px; background: #f0ab00;">${c}</span>`).join('') || 'N/A'}
-                    </span>
+            </div>
+            ` : ''}
+            
+            <!-- Two Column Layout for Metadata -->
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                <div>
+                    <h4 style="color: #0066cc; margin-bottom: 12px;">Additional Information</h4>
+                    <div class="info-row">
+                        <span class="label">Full Name:</span>
+                        <span class="value"><code style="font-size: 11px; word-break: break-all;">${policy.name}</code></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Severity:</span>
+                        <span class="value">${policy.severity || 'N/A'}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Disabled:</span>
+                        <span class="value">${policy.disabled ? 'Yes' : 'No'}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Created:</span>
+                        <span class="value">${new Date(policy.createdAt).toLocaleString()}</span>
+                    </div>
                 </div>
-                
+                <div>
                 ${Object.keys(policy.labels || {}).length > 0 ? `
                 <div style="margin-top: 20px;">
                     <h4 style="color: #0066cc; margin-bottom: 12px;">Labels</h4>

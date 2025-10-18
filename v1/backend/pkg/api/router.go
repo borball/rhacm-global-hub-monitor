@@ -12,6 +12,7 @@ func SetupRouter(
 	hubHandler *handlers.HubHandler,
 	healthHandler *handlers.HealthHandler,
 	policyHandler *handlers.PolicyHandler,
+	cguHandler *handlers.CGUHandler,
 	jwtValidator *auth.JWTValidator,
 	authEnabled bool,
 	corsOrigins []string,
@@ -44,6 +45,12 @@ func SetupRouter(
 		policies := v1.Group("/policies")
 		{
 			policies.GET("/:namespace/:name/yaml", policyHandler.GetPolicyYAML)
+		}
+
+		// CGU endpoints
+		cgu := v1.Group("/cgu")
+		{
+			cgu.POST("/create", cguHandler.CreateCGU)
 		}
 	}
 

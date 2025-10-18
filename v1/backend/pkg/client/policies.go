@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"time"
 
 	"github.com/rhacm-global-hub-monitor/backend/pkg/models"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -57,6 +58,44 @@ func convertUnstructuredToPolicy(obj *unstructured.Unstructured) (models.PolicyI
 		if compliant, ok := status["compliant"].(string); ok {
 			policy.ComplianceState = compliant
 		}
+
+		// Extract latest status message from details
+		if details, ok := status["details"].([]interface{}); ok && len(details) > 0 {
+			if detail, ok := details[0].(map[string]interface{}); ok {
+				if history, ok := detail["history"].([]interface{}); ok && len(history) > 0 {
+					// Find the most recent history entry by timestamp
+					var latestMessage string
+					var latestTimestamp string
+					var latestTime time.Time
+
+					for _, h := range history {
+						if historyEntry, ok := h.(map[string]interface{}); ok {
+							if timestamp, ok := historyEntry["lastTimestamp"].(string); ok {
+								t, err := time.Parse(time.RFC3339, timestamp)
+								if err == nil {
+									if t.After(latestTime) {
+										latestTime = t
+										latestTimestamp = timestamp
+										if message, ok := historyEntry["message"].(string); ok {
+											latestMessage = message
+										}
+									}
+								}
+							}
+						}
+					}
+
+					// Store the latest message
+					if latestMessage != "" {
+						if policy.Annotations == nil {
+							policy.Annotations = make(map[string]string)
+						}
+						policy.Annotations["latest-status-message"] = latestMessage
+						policy.Annotations["latest-status-timestamp"] = latestTimestamp
+					}
+				}
+			}
+		}
 	}
 
 	// Extract annotations for additional info
@@ -84,10 +123,21 @@ func convertUnstructuredToPolicy(obj *unstructured.Unstructured) (models.PolicyI
 		}
 	}
 
-	// Count violations (if status has details)
+	// Count actual violations from status details
 	if status, found, err := unstructured.NestedMap(obj.Object, "status"); err == nil && found {
 		if details, ok := status["details"].([]interface{}); ok {
-			policy.Violations = len(details)
+			violationCount := 0
+			for _, detail := range details {
+				if detailMap, ok := detail.(map[string]interface{}); ok {
+					// Check if this detail shows a non-compliant state
+					if compliant, ok := detailMap["compliant"].(string); ok {
+						if compliant != "Compliant" {
+							violationCount++
+						}
+					}
+				}
+			}
+			policy.Violations = violationCount
 		}
 	}
 

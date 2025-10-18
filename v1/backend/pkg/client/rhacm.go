@@ -365,13 +365,23 @@ func extractClusterInfo(cluster *clusterv1.ManagedCluster) models.ClusterInfo {
 		CreatedAt:         cluster.CreationTimestamp.Time,
 	}
 
+	// Extract configuration version from labels
+	if cluster.Labels != nil {
+		if configVersion, ok := cluster.Labels["configuration-version"]; ok {
+			info.Region = configVersion // Reuse Region field for configuration version
+		}
+	}
+
 	// Extract information from cluster claims
 	for _, claim := range cluster.Status.ClusterClaims {
 		switch claim.Name {
 		case "platform.open-cluster-management.io":
 			info.Platform = claim.Value
 		case "region.open-cluster-management.io":
-			info.Region = claim.Value
+			// Only set if not already set from configuration-version label
+			if info.Region == "" {
+				info.Region = claim.Value
+			}
 		case "version.openshift.io":
 			info.OpenshiftVersion = claim.Value
 		case "consoleurl.cluster.open-cluster-management.io":

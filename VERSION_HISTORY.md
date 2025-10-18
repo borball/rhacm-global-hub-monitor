@@ -114,30 +114,68 @@ GET /api/policies/{namespace}/{name}/yaml
 
 ---
 
-## v1 (Development - October 18, 2025)
+## v1.0 (Production - October 18, 2025)
 
-**Status**: ✅ Ready for Development  
+**Status**: ✅ Production Ready  
 **Location**: `/root/workspace/github/rhacm-global-hub-monitor/v1/`  
-**Based On**: v0 (complete copy)
+**Based On**: v0 (October 17-18, 2025)
 
-### Changes from v0
+### Major Features Added
 
-**Documentation Reorganization**:
-- ✅ Clean root directory (4 essential files)
-- ✅ Organized docs/ structure:
-  - Core documentation (API, Deployment, Development, Architecture)
-  - guides/ (examples and instructions)
-  - project-status/ (project documentation)
-  - test-results/ (all test validations)
-- ✅ Created STRUCTURE.md for easy navigation
-- ✅ Created docs/README.md as documentation index
-- ✅ Professional, scalable structure
+**1. Policy Enforcement via TALM** ⚡
+- One-click CGU (ClusterGroupUpgrade) creation for non-compliant policies
+- Enforce button on policy pages
+- Correct namespace (ztp-install) and short policy names
+- Short CGU names (under 63 chars): `{cluster}-{timestamp}`
+- TALM-compatible for automated policy remediation
 
-**All v0 Features Included**:
-- Complete backend and frontend code
-- All deployment manifests
-- All working features
-- Ready for new development
+**2. Policy Status Messages** 📋
+- Latest status message display with timestamp
+- Shows violations, notifications, and compliance details
+- Helps troubleshoot non-compliant policies
+- Extracted from policy status.details history
+
+**3. Configuration Version Tracking** ⚙️
+- Displays on all clusters (hubs and spokes)
+- Extracted from ManagedCluster labels
+- Searchable/filterable on spoke clusters page
+- Examples: hub-418-v1, vdu2-4.18-p3a5
+
+**4. Improved UI/UX** 🎨
+- Redesigned policy details (4 summary cards, full-width status)
+- Compact spoke detail page (60% less space)
+- Configuration column in spoke table
+- Removed Standards/Categories/Controls from policy details
+- Better visual hierarchy and readability
+
+**5. Enhanced Search/Filter** 🔍
+- 3-field search on spokes (name, version, configuration)
+- Radio buttons for compliance filter
+- Real-time filtering with live counters
+- Clear buttons for easy reset
+
+### Bug Fixes
+- Fixed violation counting (only counts non-compliant details)
+- Fixed latest message detection (timestamp-based)
+- Fixed node count (shows 3 not 6)
+- Fixed CGU name length (under 63 chars)
+- Fixed policy YAML download filenames (cluster-prefixed)
+
+### Documentation Reorganization
+- Clean root directory (4 essential files)
+- Organized docs/ structure (guides, project-status, test-results)
+- Created STRUCTURE.md and docs/README.md
+- Professional, scalable organization
+
+### API Changes
+- New endpoint: `POST /api/cgu/create`
+- Enhanced: `GET /api/policies/{ns}/{name}/yaml?hub={hub}`
+- Configuration version in cluster info
+
+### Performance
+- Same excellent performance (< 200ms)
+- Additional CGU creation endpoint
+- Efficient data extraction
 
 ---
 
