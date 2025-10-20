@@ -179,13 +179,40 @@ GET /api/policies/{namespace}/{name}/yaml
 
 ---
 
-## Future Versions
+## v2.0 (Development - October 20, 2025)
 
-v2, v3, etc. can be created for major feature additions.
+**Status**: ✅ Ready for Development  
+**Location**: `/root/workspace/github/rhacm-global-hub-monitor/v2/`  
+**Based On**: v1.0 (complete copy)
+
+### Baseline from v1.0
+
+v2 includes all v1 features:
+- Complete hub management (managed + unmanaged)
+- Full monitoring capabilities
+- Policy enforcement via TALM
+- Configuration tracking
+- All UI improvements
+- All bug fixes from v1
+
+### Ready for New Development
+
+v2 is prepared for:
+- Additional features
+- Performance enhancements
+- UI/UX improvements
+- New monitoring capabilities
 
 ---
 
-**v0**: Production-ready baseline (stable reference)  
-**v1**: Development version (active work)
+## Future Versions
+
+v3, v4, etc. can be created for major feature additions.
+
+---
+
+**v0**: Stable baseline (reference)  
+**v1**: Production with hub management (stable)  
+**v2**: Development version (active work)
 
 
