@@ -3,7 +3,6 @@ package client
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/rhacm-global-hub-monitor/backend/pkg/models"
 	corev1 "k8s.io/api/core/v1"
@@ -220,7 +219,7 @@ func (r *RHACMClient) discoverUnmanagedHubs(ctx context.Context, existingHubs ma
 					}
 				}
 			}
-			
+
 			// Get console URL from console route
 			routeGVR := schema.GroupVersionResource{
 				Group:    "route.openshift.io",
@@ -235,14 +234,14 @@ func (r *RHACMClient) discoverUnmanagedHubs(ctx context.Context, existingHubs ma
 					}
 				}
 			}
-			
+
 			// Get nodes and version info
 			nodes, err := hubClient.kubeClient.GetNodes(ctx)
 			if err == nil && len(nodes.Items) > 0 {
 				hub.Status = "Connected"
 				hub.Version = nodes.Items[0].Status.NodeInfo.KubeletVersion
 				hub.ClusterInfo.KubernetesVersion = nodes.Items[0].Status.NodeInfo.KubeletVersion
-				
+
 				// Convert all nodes
 				for i := range nodes.Items {
 					nodeInfo := ConvertNodeToNodeInfo(&nodes.Items[i])
@@ -253,13 +252,13 @@ func (r *RHACMClient) discoverUnmanagedHubs(ctx context.Context, existingHubs ma
 					hub.NodesInfo = append(hub.NodesInfo, nodeInfo)
 				}
 			}
-			
+
 			// Get spoke clusters
 			spokes, err := r.getSpokesClustersFromHub(ctx, nsName)
 			if err == nil {
 				hub.ManagedClusters = spokes
 			}
-			
+
 			// Get policies
 			policies, err := hubClient.kubeClient.GetPoliciesForNamespace(ctx, nsName)
 			if err == nil {
