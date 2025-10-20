@@ -1387,38 +1387,79 @@ function showAddHubForm() {
         
         <h2 class="section-title">Add New Hub</h2>
         
-        <div class="card" style="max-width: 800px; margin: 0 auto;">
+        <div class="card" style="max-width: 900px; margin: 0 auto;">
+            <!-- Method Selection Tabs -->
+            <div style="display: flex; border-bottom: 2px solid #f0f0f0; margin-bottom: 20px;">
+                <button type="button" class="tab active" id="tab-kubeconfig" onclick="switchAddHubMethod('kubeconfig')" 
+                        style="flex: 1; padding: 15px; border: none; background: none; cursor: pointer; font-weight: 600; border-bottom: 3px solid #0066cc;">
+                    📄 Kubeconfig File
+                </button>
+                <button type="button" class="tab" id="tab-credentials" onclick="switchAddHubMethod('credentials')" 
+                        style="flex: 1; padding: 15px; border: none; background: none; cursor: pointer; font-weight: 600; border-bottom: 3px solid transparent;">
+                    🔑 API Credentials
+                </button>
+            </div>
+            
             <form onsubmit="submitAddHub(event)" style="padding: 20px;">
                 <div style="margin-bottom: 20px;">
                     <label style="display: block; margin-bottom: 8px; font-weight: 600;">Hub Name</label>
                     <input type="text" id="hub-name" placeholder="e.g., acm3, regional-hub-1" 
                            required
                            style="width: 100%; padding: 10px; border: 1px solid #d2d2d2; border-radius: 4px; font-size: 14px;">
-                    <small style="color: #6a6e73;">Alphanumeric with hyphens, will be used as namespace</small>
+                    <small style="color: #6a6e73;">Lowercase alphanumeric with hyphens, will be used as namespace</small>
                 </div>
                 
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">
-                        Kubeconfig 
-                        <span style="font-size: 12px; color: #6a6e73; font-weight: normal;">(YAML or JSON format)</span>
-                    </label>
-                    <textarea id="hub-kubeconfig" placeholder="Paste kubeconfig content here (YAML or JSON)..." 
-                              required
-                              rows="15"
-                              style="width: 100%; padding: 10px; border: 1px solid #d2d2d2; border-radius: 4px; font-family: monospace; font-size: 13px;"></textarea>
-                    <small style="color: #6a6e73;">
-                        📝 Supports both YAML and JSON formats<br>
-                        Will be stored as {hub-name}-admin-kubeconfig secret
-                    </small>
+                <!-- Kubeconfig Method -->
+                <div id="method-kubeconfig">
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">
+                            Kubeconfig 
+                            <span style="font-size: 12px; color: #6a6e73; font-weight: normal;">(YAML or JSON format)</span>
+                        </label>
+                        <textarea id="hub-kubeconfig" placeholder="Paste kubeconfig content here (YAML or JSON)..." 
+                                  rows="12"
+                                  style="width: 100%; padding: 10px; border: 1px solid #d2d2d2; border-radius: 4px; font-family: monospace; font-size: 13px;"></textarea>
+                        <small style="color: #6a6e73;">
+                            📝 Supports both YAML and JSON formats
+                        </small>
+                    </div>
                 </div>
                 
-                <div style="margin-bottom: 20px; padding: 15px; background: #e7f4f9; border-radius: 4px; border-left: 4px solid #0066cc;">
-                    <h4 style="margin: 0 0 10px 0; color: #0066cc; font-size: 14px;">💡 How to get kubeconfig:</h4>
-                    <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #6a6e73; line-height: 1.8;">
-                        <li>From hub cluster: <code style="background: white; padding: 2px 6px; border-radius: 3px;">oc get secret {hub}-admin-kubeconfig -n {hub} -o yaml</code></li>
-                        <li>From OpenShift console: Copy kubeconfig from cluster settings</li>
-                        <li>From local kubeconfig: <code style="background: white; padding: 2px 6px; border-radius: 3px;">cat ~/.kube/config</code></li>
-                    </ul>
+                <!-- API Credentials Method -->
+                <div id="method-credentials" style="display: none;">
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">API Server Endpoint</label>
+                        <input type="text" id="hub-api-endpoint" placeholder="https://api.cluster.example.com:6443" 
+                               style="width: 100%; padding: 10px; border: 1px solid #d2d2d2; border-radius: 4px; font-size: 14px;">
+                        <small style="color: #6a6e73;">Full API server URL including port</small>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px; padding: 12px; background: #fff4e5; border-radius: 4px; border-left: 3px solid #f0ab00;">
+                        <strong style="color: #8b4513;">Choose authentication method:</strong>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Username</label>
+                            <input type="text" id="hub-username" placeholder="admin" 
+                                   style="width: 100%; padding: 10px; border: 1px solid #d2d2d2; border-radius: 4px; font-size: 14px;">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Password</label>
+                            <input type="password" id="hub-password" placeholder="••••••••" 
+                                   style="width: 100%; padding: 10px; border: 1px solid #d2d2d2; border-radius: 4px; font-size: 14px;">
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center; margin: 15px 0; color: #6a6e73; font-weight: 600;">- OR -</div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Bearer Token</label>
+                        <textarea id="hub-token" placeholder="Paste service account token here..." 
+                                  rows="4"
+                                  style="width: 100%; padding: 10px; border: 1px solid #d2d2d2; border-radius: 4px; font-family: monospace; font-size: 12px;"></textarea>
+                        <small style="color: #6a6e73;">Use either username/password OR token (not both)</small>
+                    </div>
                 </div>
                 
                 <div style="display: flex; gap: 12px; justify-content: flex-end;">
@@ -1434,17 +1475,22 @@ function showAddHubForm() {
     `;
 }
 
+// Switch add hub method
+function switchAddHubMethod(method) {
+    // Update tab styles
+    document.getElementById('tab-kubeconfig').style.borderBottom = method === 'kubeconfig' ? '3px solid #0066cc' : '3px solid transparent';
+    document.getElementById('tab-credentials').style.borderBottom = method === 'credentials' ? '3px solid #0066cc' : '3px solid transparent';
+    
+    // Show/hide method sections
+    document.getElementById('method-kubeconfig').style.display = method === 'kubeconfig' ? 'block' : 'none';
+    document.getElementById('method-credentials').style.display = method === 'credentials' ? 'block' : 'none';
+}
+
 // Submit add hub form
 async function submitAddHub(event) {
     event.preventDefault();
     
     const hubName = document.getElementById('hub-name').value.trim();
-    const kubeconfigRaw = document.getElementById('hub-kubeconfig').value.trim();
-    
-    if (!hubName || !kubeconfigRaw) {
-        alert('Please provide both hub name and kubeconfig');
-        return;
-    }
     
     // Validate hub name format
     if (!/^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/.test(hubName)) {
@@ -1452,19 +1498,53 @@ async function submitAddHub(event) {
         return;
     }
     
-    try {
+    // Check which method is active
+    const kubeconfigMethod = document.getElementById('method-kubeconfig').style.display !== 'none';
+    
+    let requestBody = { hubName: hubName };
+    
+    if (kubeconfigMethod) {
+        // Kubeconfig method
+        const kubeconfigRaw = document.getElementById('hub-kubeconfig').value.trim();
+        if (!kubeconfigRaw) {
+            alert('Please provide kubeconfig content');
+            return;
+        }
         // Base64 encode the kubeconfig to avoid JSON escaping issues
-        const kubeconfigBase64 = btoa(kubeconfigRaw);
+        requestBody.kubeconfig = btoa(kubeconfigRaw);
+    } else {
+        // API credentials method
+        const apiEndpoint = document.getElementById('hub-api-endpoint').value.trim();
+        const username = document.getElementById('hub-username').value.trim();
+        const password = document.getElementById('hub-password').value.trim();
+        const token = document.getElementById('hub-token').value.trim();
         
+        if (!apiEndpoint) {
+            alert('Please provide API server endpoint');
+            return;
+        }
+        
+        if (!token && (!username || !password)) {
+            alert('Please provide either username/password OR token');
+            return;
+        }
+        
+        requestBody.apiEndpoint = apiEndpoint;
+        if (token) {
+            requestBody.token = token;
+        } else {
+            requestBody.username = username;
+            requestBody.password = password;
+        }
+    }
+    
+    try {
         const response = await fetch(`${API_BASE}/hubs/add`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                hubName: hubName,
-                kubeconfig: kubeconfigBase64
-            })
+            body: JSON.stringify(requestBody)
         });
         
         const data = await response.json();

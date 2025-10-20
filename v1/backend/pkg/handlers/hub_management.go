@@ -29,6 +29,10 @@ type AddHubRequest struct {
 	HubName       string `json:"hubName" binding:"required"`
 	Kubeconfig    string `json:"kubeconfig"`    // Base64 encoded kubeconfig
 	KubeconfigRaw string `json:"kubeconfigRaw"` // Raw kubeconfig text (YAML or JSON format)
+	APIEndpoint   string `json:"apiEndpoint"`   // API server endpoint (e.g., https://api.cluster:6443)
+	Username      string `json:"username"`      // Username for basic auth
+	Password      string `json:"password"`      // Password for basic auth
+	Token         string `json:"token"`         // Bearer token (alternative to username/password)
 }
 
 // AddHub godoc
@@ -59,7 +63,7 @@ func (h *HubManagementHandler) AddHub(c *gin.Context) {
 	var err error
 
 	if req.Kubeconfig != "" {
-		// Base64 encoded
+		// Base64 encoded kubeconfig
 		kubeconfigData, err = base64.StdEncoding.DecodeString(req.Kubeconfig)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, models.APIResponse{
@@ -71,10 +75,13 @@ func (h *HubManagementHandler) AddHub(c *gin.Context) {
 	} else if req.KubeconfigRaw != "" {
 		// Raw text (YAML or JSON - both are valid kubeconfig formats)
 		kubeconfigData = []byte(req.KubeconfigRaw)
+	} else if req.APIEndpoint != "" && (req.Username != "" || req.Token != "") {
+		// Generate kubeconfig from API endpoint and credentials
+		kubeconfigData = generateKubeconfig(req.HubName, req.APIEndpoint, req.Username, req.Password, req.Token)
 	} else {
 		c.JSON(http.StatusBadRequest, models.APIResponse{
 			Success: false,
-			Error:   "Either kubeconfig or kubeconfigRaw must be provided",
+			Error:   "Must provide either: kubeconfig, or API endpoint with credentials",
 		})
 		return
 	}
@@ -193,4 +200,41 @@ func findSubstring(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+// generateKubeconfig creates a kubeconfig from API endpoint and credentials
+func generateKubeconfig(clusterName, apiEndpoint, username, password, token string) []byte {
+	var authConfig string
+	
+	if token != "" {
+		// Token-based authentication
+		authConfig = fmt.Sprintf(`- name: %s-admin
+  user:
+    token: %s`, clusterName, token)
+	} else {
+		// Username/password authentication
+		authConfig = fmt.Sprintf(`- name: %s-admin
+  user:
+    username: %s
+    password: %s`, clusterName, username, password)
+	}
+	
+	kubeconfig := fmt.Sprintf(`apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    insecure-skip-tls-verify: true
+    server: %s
+  name: %s
+contexts:
+- context:
+    cluster: %s
+    user: %s-admin
+  name: %s-context
+current-context: %s-context
+users:
+%s
+`, apiEndpoint, clusterName, clusterName, clusterName, clusterName, clusterName, authConfig)
+	
+	return []byte(kubeconfig)
 }
