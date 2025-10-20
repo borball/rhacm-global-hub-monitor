@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/rhacm-global-hub-monitor/backend/pkg/cache"
 	"github.com/rhacm-global-hub-monitor/backend/pkg/client"
 	"github.com/rhacm-global-hub-monitor/backend/pkg/models"
 )
@@ -11,12 +13,14 @@ import (
 // HubHandler handles hub-related requests
 type HubHandler struct {
 	rhacmClient *client.RHACMClient
+	cache       *cache.Cache
 }
 
-// NewHubHandler creates a new hub handler
+// NewHubHandler creates a new hub handler with caching
 func NewHubHandler(rhacmClient *client.RHACMClient) *HubHandler {
 	return &HubHandler{
 		rhacmClient: rhacmClient,
+		cache:       cache.NewCache(90 * time.Second), // Cache for 90 seconds
 	}
 }
 
@@ -32,6 +36,17 @@ func NewHubHandler(rhacmClient *client.RHACMClient) *HubHandler {
 func (h *HubHandler) ListHubs(c *gin.Context) {
 	ctx := c.Request.Context()
 
+	// Try cache first
+	cacheKey := "hubs:list"
+	if cached, found := h.cache.Get(cacheKey); found {
+		c.JSON(http.StatusOK, models.APIResponse{
+			Success: true,
+			Data:    cached,
+		})
+		return
+	}
+
+	// Cache miss - fetch from clusters
 	hubs, err := h.rhacmClient.GetManagedHubs(ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.APIResponse{
@@ -40,6 +55,9 @@ func (h *HubHandler) ListHubs(c *gin.Context) {
 		})
 		return
 	}
+
+	// Store in cache
+	h.cache.Set(cacheKey, hubs)
 
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
@@ -62,6 +80,17 @@ func (h *HubHandler) GetHub(c *gin.Context) {
 	ctx := c.Request.Context()
 	name := c.Param("name")
 
+	// Try cache first
+	cacheKey := "hub:" + name
+	if cached, found := h.cache.Get(cacheKey); found {
+		c.JSON(http.StatusOK, models.APIResponse{
+			Success: true,
+			Data:    cached,
+		})
+		return
+	}
+
+	// Cache miss - fetch from cluster
 	hub, err := h.rhacmClient.GetManagedHub(ctx, name)
 	if err != nil {
 		c.JSON(http.StatusNotFound, models.APIResponse{
@@ -70,6 +99,9 @@ func (h *HubHandler) GetHub(c *gin.Context) {
 		})
 		return
 	}
+
+	// Store in cache
+	h.cache.Set(cacheKey, hub)
 
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
