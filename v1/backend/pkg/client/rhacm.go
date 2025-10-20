@@ -3,10 +3,13 @@ package client
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/rhacm-global-hub-monitor/backend/pkg/models"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	clusterv1 "open-cluster-management.io/api/cluster/v1"
 )
 
@@ -125,21 +128,226 @@ func (r *RHACMClient) GetManagedHubs(ctx context.Context) ([]models.ManagedHub, 
 		hubs = append(hubs, *hub)
 	}
 
+	// Create set of existing hub names
+	existingHubNames := make(map[string]bool)
+	for _, hub := range hubs {
+		existingHubNames[hub.Name] = true
+	}
+
+	// Also discover hubs from kubeconfig secrets (manually added hubs)
+	unmanagedHubs, err := r.discoverUnmanagedHubs(ctx, existingHubNames)
+	if err == nil {
+		hubs = append(hubs, unmanagedHubs...)
+	}
+
 	return hubs, nil
 }
 
-// GetManagedHub returns a specific managed hub
-func (r *RHACMClient) GetManagedHub(ctx context.Context, name string) (*models.ManagedHub, error) {
-	cluster, err := r.kubeClient.GetManagedCluster(ctx, name)
+// discoverUnmanagedHubs finds hubs that were manually added via kubeconfig secrets
+func (r *RHACMClient) discoverUnmanagedHubs(ctx context.Context, existingHubs map[string]bool) ([]models.ManagedHub, error) {
+	var unmanagedHubs []models.ManagedHub
+
+	// List all namespaces
+	namespaces, err := r.kubeClient.ClientSet.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get managed cluster: %w", err)
+		return nil, err
 	}
 
-	if !isHub(*cluster) {
-		return nil, fmt.Errorf("cluster %s is not a hub", name)
+	// Check each namespace for admin-kubeconfig secret
+	for _, ns := range namespaces.Items {
+		nsName := ns.Name
+
+		// Skip system namespaces and already discovered hubs
+		if existingHubs[nsName] || nsName == "default" || nsName == "kube-system" || nsName == "openshift" || len(nsName) > 20 && nsName[:10] == "openshift-" {
+			continue
+		}
+
+		// Look for {namespace}-admin-kubeconfig secret
+		secretName := nsName + "-admin-kubeconfig"
+		secret, err := r.kubeClient.ClientSet.CoreV1().Secrets(nsName).Get(ctx, secretName, metav1.GetOptions{})
+		if err != nil {
+			continue // Secret doesn't exist, not a hub
+		}
+
+		// Check if created by rhacm-monitor
+		if secret.Labels == nil || secret.Labels["created-by"] != "rhacm-monitor" {
+			continue
+		}
+
+		// This is a manually added hub - try to connect and get basic info
+		hub := models.ManagedHub{
+			Name:      nsName,
+			Namespace: nsName,
+			Status:    "External",
+			Version:   "Unknown",
+			Labels: map[string]string{
+				"type": "unmanaged",
+			},
+			Annotations: map[string]string{
+				"source": "manual",
+			},
+			ClusterInfo: models.ClusterInfo{
+				Platform: "External",
+			},
+			NodesInfo:       []models.NodeInfo{},
+			PoliciesInfo:    []models.PolicyInfo{},
+			ManagedClusters: nil,
+		}
+
+		// Try to connect and get basic version/node info for the card
+		hubClient, err := NewHubClientFromSecret(ctx, r.kubeClient, nsName)
+		if err == nil {
+			nodes, err := hubClient.kubeClient.GetNodes(ctx)
+			if err == nil && len(nodes.Items) > 0 {
+				hub.Status = "Connected"
+				hub.Version = nodes.Items[0].Status.NodeInfo.KubeletVersion
+
+				// Try to get OpenShift version from ClusterVersion resource
+				cvGVR := schema.GroupVersionResource{
+					Group:    "config.openshift.io",
+					Version:  "v1",
+					Resource: "clusterversions",
+				}
+				cvList, err := hubClient.kubeClient.DynamicClient.Resource(cvGVR).List(ctx, metav1.ListOptions{})
+				if err == nil && len(cvList.Items) > 0 {
+					// Get version from status.desired.version
+					if status, found, _ := unstructured.NestedMap(cvList.Items[0].Object, "status"); found {
+						if desired, found, _ := unstructured.NestedMap(status, "desired"); found {
+							if version, found, _ := unstructured.NestedString(desired, "version"); found {
+								hub.ClusterInfo.OpenshiftVersion = version
+							}
+						}
+					}
+				}
+
+				// Get node count for card display
+				uniqueHostnames := make(map[string]bool)
+				for i := range nodes.Items {
+					nodeInfo := ConvertNodeToNodeInfo(&nodes.Items[i])
+					hostname := nodes.Items[i].Name
+					if len(hostname) > 0 {
+						parts := strings.Split(hostname, ".")
+						uniqueHostnames[parts[0]] = true
+					}
+					if nodeInfo.Annotations == nil {
+						nodeInfo.Annotations = make(map[string]string)
+					}
+					nodeInfo.Annotations["data-source"] = "Node"
+					hub.NodesInfo = append(hub.NodesInfo, nodeInfo)
+				}
+			}
+
+			// Try to get spoke clusters from this hub
+			spokes, err := r.getSpokesClustersFromHub(ctx, nsName)
+			if err == nil {
+				hub.ManagedClusters = spokes
+			}
+		}
+
+		unmanagedHubs = append(unmanagedHubs, hub)
 	}
 
-	return r.convertToManagedHub(ctx, cluster)
+	return unmanagedHubs, nil
+}
+
+// GetManagedHub returns a specific managed hub (either from ManagedCluster or kubeconfig secret)
+func (r *RHACMClient) GetManagedHub(ctx context.Context, name string) (*models.ManagedHub, error) {
+	// Try to get from ManagedCluster first
+	cluster, err := r.kubeClient.GetManagedCluster(ctx, name)
+	if err == nil && isHub(*cluster) {
+		return r.convertToManagedHub(ctx, cluster)
+	}
+
+	// Not found as ManagedCluster, check if it's a manually added hub
+	secretName := name + "-admin-kubeconfig"
+	secret, err := r.kubeClient.ClientSet.CoreV1().Secrets(name).Get(ctx, secretName, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("hub not found as ManagedCluster or manual hub: %w", err)
+	}
+
+	// Verify it was created by rhacm-monitor
+	if secret.Labels == nil || secret.Labels["created-by"] != "rhacm-monitor" {
+		return nil, fmt.Errorf("hub %s not found", name)
+	}
+
+	// This is a manually added hub
+	hub := &models.ManagedHub{
+		Name:      name,
+		Namespace: name,
+		Status:    "External",
+		Version:   "Unknown",
+		Labels: map[string]string{
+			"type": "unmanaged",
+		},
+		Annotations: map[string]string{
+			"source": "manual",
+		},
+		ClusterInfo: models.ClusterInfo{
+			Platform: "External",
+		},
+		NodesInfo:       []models.NodeInfo{},
+		PoliciesInfo:    []models.PolicyInfo{},
+		ManagedClusters: nil,
+	}
+
+	// Try to connect and get basic info
+	hubClient, err := NewHubClientFromSecret(ctx, r.kubeClient, name)
+	if err == nil {
+		// Get nodes
+		nodes, err := hubClient.kubeClient.GetNodes(ctx)
+		if err == nil && len(nodes.Items) > 0 {
+			hub.Status = "Connected"
+			hub.Version = nodes.Items[0].Status.NodeInfo.KubeletVersion
+
+			// Try to get OpenShift version from ClusterVersion resource
+			cvGVR := schema.GroupVersionResource{
+				Group:    "config.openshift.io",
+				Version:  "v1",
+				Resource: "clusterversions",
+			}
+			cvList, err := hubClient.kubeClient.DynamicClient.Resource(cvGVR).List(ctx, metav1.ListOptions{})
+			if err == nil && len(cvList.Items) > 0 {
+				// Get version from status.desired.version
+				if status, found, _ := unstructured.NestedMap(cvList.Items[0].Object, "status"); found {
+					if desired, found, _ := unstructured.NestedMap(status, "desired"); found {
+						if version, found, _ := unstructured.NestedString(desired, "version"); found {
+							hub.ClusterInfo.OpenshiftVersion = version
+						}
+					}
+				}
+				// Get cluster ID from spec.clusterID
+				if spec, found, _ := unstructured.NestedMap(cvList.Items[0].Object, "spec"); found {
+					if clusterID, found, _ := unstructured.NestedString(spec, "clusterID"); found {
+						hub.ClusterInfo.ClusterID = clusterID
+					}
+				}
+			}
+
+			// Convert nodes
+			for i := range nodes.Items {
+				nodeInfo := ConvertNodeToNodeInfo(&nodes.Items[i])
+				if nodeInfo.Annotations == nil {
+					nodeInfo.Annotations = make(map[string]string)
+				}
+				nodeInfo.Annotations["data-source"] = "Node"
+				hub.NodesInfo = append(hub.NodesInfo, nodeInfo)
+			}
+		}
+
+		// Try to get policies
+		policies, err := hubClient.kubeClient.GetPoliciesForNamespace(ctx, name)
+		if err == nil {
+			hub.PoliciesInfo = policies
+		}
+
+		// Try to get spoke clusters
+		spokes, err := r.getSpokesClustersFromHub(ctx, name)
+		if err == nil {
+			hub.ManagedClusters = spokes
+		}
+	}
+
+	return hub, nil
 }
 
 // GetManagedClustersForHub returns all managed clusters for a specific hub
@@ -172,8 +380,8 @@ func (r *RHACMClient) getSpokesClustersFromHub(ctx context.Context, hubName stri
 	for i := range managedClusters.Items {
 		cluster := &managedClusters.Items[i]
 
-		// Skip if this is a hub cluster
-		if isHub(*cluster) {
+		// Skip if this is a hub cluster or local-cluster (hub itself)
+		if isHub(*cluster) || cluster.Name == "local-cluster" {
 			continue
 		}
 

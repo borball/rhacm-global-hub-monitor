@@ -93,8 +93,8 @@ body {
 }
 
 .status.notready {
-    background: #faeae8;
-    color: #c9190b;
+    background: #fef0e6;
+    color: #ec7a08;
 }
 
 .info-row {

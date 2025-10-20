@@ -111,7 +111,7 @@ func (h *HubManagementHandler) AddHub(c *gin.Context) {
 		return
 	}
 
-	// Create kubeconfig secret
+	// Create or update kubeconfig secret
 	secretName := fmt.Sprintf("%s-admin-kubeconfig", req.HubName)
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -127,13 +127,26 @@ func (h *HubManagementHandler) AddHub(c *gin.Context) {
 		Type: corev1.SecretTypeOpaque,
 	}
 
+	// Try to create, if exists then update
 	_, err = h.kubeClient.ClientSet.CoreV1().Secrets(req.HubName).Create(ctx, secret, metav1.CreateOptions{})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.APIResponse{
-			Success: false,
-			Error:   "Failed to create kubeconfig secret: " + err.Error(),
-		})
-		return
+		if isAlreadyExistsError(err) {
+			// Secret exists, update it
+			_, err = h.kubeClient.ClientSet.CoreV1().Secrets(req.HubName).Update(ctx, secret, metav1.UpdateOptions{})
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, models.APIResponse{
+					Success: false,
+					Error:   "Failed to update existing kubeconfig secret: " + err.Error(),
+				})
+				return
+			}
+		} else {
+			c.JSON(http.StatusInternalServerError, models.APIResponse{
+				Success: false,
+				Error:   "Failed to create kubeconfig secret: " + err.Error(),
+			})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, models.APIResponse{
@@ -205,7 +218,7 @@ func findSubstring(s, substr string) bool {
 // generateKubeconfig creates a kubeconfig from API endpoint and credentials
 func generateKubeconfig(clusterName, apiEndpoint, username, password, token string) []byte {
 	var authConfig string
-	
+
 	if token != "" {
 		// Token-based authentication
 		authConfig = fmt.Sprintf(`- name: %s-admin
@@ -218,7 +231,7 @@ func generateKubeconfig(clusterName, apiEndpoint, username, password, token stri
     username: %s
     password: %s`, clusterName, username, password)
 	}
-	
+
 	kubeconfig := fmt.Sprintf(`apiVersion: v1
 kind: Config
 clusters:
@@ -235,6 +248,6 @@ current-context: %s-context
 users:
 %s
 `, apiEndpoint, clusterName, clusterName, clusterName, clusterName, clusterName, authConfig)
-	
+
 	return []byte(kubeconfig)
 }

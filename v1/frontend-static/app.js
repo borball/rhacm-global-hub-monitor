@@ -42,7 +42,7 @@ function renderHubsList(hubs) {
     const totalPolicies = allPolicies.length;
     const compliantPolicies = allPolicies.filter(p => p.complianceState === 'Compliant').length;
     const compliancePercent = totalPolicies > 0 ? Math.round((compliantPolicies / totalPolicies) * 100) : 0;
-    const healthyHubs = hubs.filter(h => h.status.toLowerCase().includes('ready')).length;
+    const healthyHubs = hubs.filter(h => h.status.toLowerCase().includes('ready') || h.status.toLowerCase().includes('connected')).length;
 
     let html = `
         <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); margin-bottom: 30px;">
@@ -67,12 +67,20 @@ function renderHubsList(hubs) {
                 <small>${compliantPolicies}/${totalPolicies} policies</small>
             </div>
         </div>
-
-        <h2 class="section-title">Managed Hubs</h2>
-        <div class="grid">
     `;
     
-    hubs.forEach(hub => {
+    // Separate managed and unmanaged hubs
+    const managedHubs = hubs.filter(h => h.annotations?.source !== 'manual');
+    const unmanagedHubs = hubs.filter(h => h.annotations?.source === 'manual');
+    
+    // Only show Managed Hubs section if there are managed hubs
+    if (managedHubs.length > 0) {
+        html += `
+            <h2 class="section-title">Managed Hubs</h2>
+            <div class="grid">
+        `;
+        
+        managedHubs.forEach(hub => {
         const statusClass = hub.status.toLowerCase().includes('ready') ? 'ready' : 'notready';
         const spokeCount = hub.managedClusters?.length || 0;
         const policyCount = hub.policiesInfo?.length || 0;
@@ -128,32 +136,83 @@ function renderHubsList(hubs) {
                 </button>
             </div>
         `;
-    });
-    
-    html += '</div>';
+        });
+        
+        html += '</div>';
+    }
     
     // Unmanaged Hubs section
+    const topMargin = managedHubs.length > 0 ? 'margin-top: 50px;' : '';
     html += `
-        <div style="margin-top: 50px;">
+        <div style="${topMargin}">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2 class="section-title" style="margin: 0;">Unmanaged Hubs</h2>
                 <button class="btn btn-primary" onclick="showAddHubForm()" style="padding: 10px 20px;">
                     ➕ Add Hub
                 </button>
             </div>
+    `;
+    
+    if (unmanagedHubs.length > 0) {
+        // Show unmanaged hub cards
+        html += '<div class="grid">';
+        unmanagedHubs.forEach(hub => {
+            const statusClass = hub.status.toLowerCase().includes('ready') || hub.status === 'External' ? 'ready' : 'notready';
+            const spokeCount = hub.managedClusters?.length || 0;
+            const policyCount = hub.policiesInfo?.length || 0;
+            const nodeCount = hub.nodesInfo?.length || 0;
+            
+            html += `
+                <div class="card">
+                    <h3>
+                        <span>${hub.name}</span>
+                        <span class="status ${statusClass}">${hub.status}</span>
+                    </h3>
+                    <div class="info-row">
+                        <span class="label">OpenShift Version:</span>
+                        <span class="value">${hub.clusterInfo.openshiftVersion || 'N/A'}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Kubernetes:</span>
+                        <span class="value">${hub.version || 'Unknown'}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Platform:</span>
+                        <span class="value">${hub.clusterInfo.platform || 'External'}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Configuration:</span>
+                        <span class="value"><code style="background: #e7f4f9; padding: 2px 8px; border-radius: 4px; color: #0066cc; font-size: 12px;">${hub.clusterInfo.region || 'N/A'}</code></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Type:</span>
+                        <span class="value"><span class="badge" style="background: #f0ab00;">Unmanaged</span></span>
+                    </div>
+                    <button class="btn btn-primary" onclick="showHubDetails('${hub.name}')" style="width: 100%; margin-top: 12px;">
+                        View Details
+                    </button>
+                </div>
+            `;
+        });
+        html += '</div>';
+    } else {
+        // Empty state
+        html += `
             <div class="card" style="padding: 40px; text-align: center; background: #f9f9f9;">
                 <div style="font-size: 48px; margin-bottom: 15px; opacity: 0.5;">📦</div>
                 <h3 style="color: #6a6e73; margin-bottom: 10px;">No Unmanaged Hubs</h3>
                 <p style="color: #6a6e73; margin-bottom: 20px;">
-                    Add external hub clusters by providing their kubeconfig.<br>
-                    These hubs will be monitored without being managed by this Global Hub.
+                    ${managedHubs.length === 0 ? 'No hubs discovered automatically.' : 'Add external hub clusters by providing their kubeconfig.'}<br>
+                    ${managedHubs.length === 0 ? 'Add your first hub to start monitoring.' : 'These hubs will be monitored without being managed by this Global Hub.'}
                 </p>
                 <button class="btn btn-primary" onclick="showAddHubForm()" style="padding: 12px 24px;">
                     ➕ Add Your First Hub
                 </button>
             </div>
-        </div>
-    `;
+        `;
+    }
+    
+    html += '</div>';
     
     document.getElementById('app').innerHTML = html;
 }
@@ -201,9 +260,9 @@ function renderHubDetails(hub) {
         
         <div class="tabs">
             <button class="tab active" onclick="switchTab(0, '${hub.name}')">Overview</button>
-            <button class="tab" onclick="switchTab(1, '${hub.name}')">Spoke Clusters (${spokeCount})</button>
-            <button class="tab" onclick="switchTab(2, '${hub.name}')">Nodes (${nodeCount})</button>
-            <button class="tab" onclick="switchTab(3, '${hub.name}')">Policies (${policyCount})</button>
+            <button class="tab" onclick="switchTab(1, '${hub.name}')">Nodes (${nodeCount})</button>
+            <button class="tab" onclick="switchTab(2, '${hub.name}')">Policies (${policyCount})</button>
+            <button class="tab" onclick="switchTab(3, '${hub.name}')">Spoke Clusters (${spokeCount})</button>
         </div>
         
         <div class="tab-content active" id="tab-0">
@@ -211,15 +270,15 @@ function renderHubDetails(hub) {
         </div>
         
         <div class="tab-content" id="tab-1">
-            ${renderSpokes(hub.managedClusters || [], hub.name)}
-        </div>
-        
-        <div class="tab-content" id="tab-2">
             ${renderNodes(hub.nodesInfo || [])}
         </div>
         
-        <div class="tab-content" id="tab-3">
+        <div class="tab-content" id="tab-2">
             ${renderPolicies(hub.policiesInfo || [])}
+        </div>
+        
+        <div class="tab-content" id="tab-3">
+            ${renderSpokes(hub.managedClusters || [], hub.name)}
         </div>
     `;
     
@@ -308,7 +367,7 @@ function renderSpokes(spokes, hubName) {
     `;
     
     spokes.forEach((spoke, spokeIndex) => {
-        const statusClass = spoke.status.toLowerCase().includes('ready') ? 'ready' : 'notready';
+        const statusClass = spoke.status.toLowerCase() === 'ready' ? 'ready' : 'notready';
         const policyCount = spoke.policiesInfo?.length || 0;
         const nodeCount = spoke.nodesInfo?.length || 0;
         const compliantPolicies = (spoke.policiesInfo || []).filter(p => p.complianceState === 'Compliant').length;
