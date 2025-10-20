@@ -42,6 +42,7 @@ type ClusterInfo struct {
 	Region            string    `json:"region"`
 	OpenshiftVersion  string    `json:"openshiftVersion"`
 	ConsoleURL        string    `json:"consoleURL"`
+	GitOpsURL         string    `json:"gitopsURL"`
 	APIURL            string    `json:"apiURL"`
 	NetworkType       string    `json:"networkType"`
 	CreatedAt         time.Time `json:"createdAt"`

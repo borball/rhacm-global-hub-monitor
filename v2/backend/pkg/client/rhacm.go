@@ -234,6 +234,16 @@ func (r *RHACMClient) discoverUnmanagedHubs(ctx context.Context, existingHubs ma
 					}
 				}
 			}
+			
+			// Get GitOps console URL from openshift-gitops namespace
+			gitopsRoute, err := hubClient.kubeClient.DynamicClient.Resource(routeGVR).Namespace("openshift-gitops").Get(ctx, "openshift-gitops-server", metav1.GetOptions{})
+			if err == nil {
+				if spec, found, _ := unstructured.NestedMap(gitopsRoute.Object, "spec"); found {
+					if host, found, _ := unstructured.NestedString(spec, "host"); found {
+						hub.ClusterInfo.GitOpsURL = "https://" + host
+					}
+				}
+			}
 
 			// Get nodes and version info
 			nodes, err := hubClient.kubeClient.GetNodes(ctx)

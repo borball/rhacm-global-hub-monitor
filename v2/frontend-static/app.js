@@ -128,7 +128,12 @@ function renderHubsList(hubs) {
                 </div>
                 ${hub.clusterInfo.consoleURL ? `
                 <div class="info-row">
-                    <a href="${hub.clusterInfo.consoleURL}" target="_blank" class="console-link">Open Console</a>
+                    <a href="${hub.clusterInfo.consoleURL}" target="_blank" class="console-link">🖥️ Open Console</a>
+                </div>
+                ` : ''}
+                ${hub.clusterInfo.gitopsURL ? `
+                <div class="info-row">
+                    <a href="${hub.clusterInfo.gitopsURL}" target="_blank" class="console-link">🔄 GitOps Console</a>
                 </div>
                 ` : ''}
                 <button class="btn btn-primary" onclick="showHubDetails('${hub.name}')" style="width: 100%; margin-top: 12px;">
@@ -157,10 +162,16 @@ function renderHubsList(hubs) {
         // Show unmanaged hub cards
         html += '<div class="grid">';
         unmanagedHubs.forEach(hub => {
-            const statusClass = hub.status.toLowerCase().includes('ready') || hub.status === 'External' ? 'ready' : 'notready';
+            const statusClass = hub.status.toLowerCase() === 'ready' || hub.status.toLowerCase() === 'connected' ? 'ready' : 'notready';
             const spokeCount = hub.managedClusters?.length || 0;
             const policyCount = hub.policiesInfo?.length || 0;
-            const nodeCount = hub.nodesInfo?.length || 0;
+            
+            // Calculate merged node count
+            const uniqueHostnames = new Set();
+            (hub.nodesInfo || []).forEach(node => {
+                uniqueHostnames.add(node.name.split('.')[0]);
+            });
+            const nodeCount = uniqueHostnames.size;
             
             html += `
                 <div class="card">
@@ -185,9 +196,27 @@ function renderHubsList(hubs) {
                         <span class="value"><code style="background: #e7f4f9; padding: 2px 8px; border-radius: 4px; color: #0066cc; font-size: 12px;">${hub.clusterInfo.region || 'N/A'}</code></span>
                     </div>
                     <div class="info-row">
-                        <span class="label">Type:</span>
-                        <span class="value"><span class="badge" style="background: #f0ab00;">Unmanaged</span></span>
+                        <span class="label">Spoke Clusters:</span>
+                        <span class="value"><span class="badge">${spokeCount}</span></span>
                     </div>
+                    <div class="info-row">
+                        <span class="label">Nodes:</span>
+                        <span class="value"><span class="badge">${nodeCount}</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Policies:</span>
+                        <span class="value"><span class="badge success">${policyCount}</span></span>
+                    </div>
+                    ${hub.clusterInfo.consoleURL ? `
+                    <div class="info-row">
+                        <a href="${hub.clusterInfo.consoleURL}" target="_blank" class="console-link">🖥️ Open Console</a>
+                    </div>
+                    ` : ''}
+                    ${hub.clusterInfo.gitopsURL ? `
+                    <div class="info-row">
+                        <a href="${hub.clusterInfo.gitopsURL}" target="_blank" class="console-link">🔄 GitOps Console</a>
+                    </div>
+                    ` : ''}
                     <button class="btn btn-primary" onclick="showHubDetails('${hub.name}')" style="width: 100%; margin-top: 12px;">
                         View Details
                     </button>
@@ -304,6 +333,12 @@ function renderHubOverview(hub) {
             <div class="info-row">
                 <span class="label">Console URL:</span>
                 <span class="value"><a href="${hub.clusterInfo.consoleURL}" target="_blank">${hub.clusterInfo.consoleURL}</a></span>
+            </div>
+            ` : ''}
+            ${hub.clusterInfo.gitopsURL ? `
+            <div class="info-row">
+                <span class="label">GitOps Console:</span>
+                <span class="value"><a href="${hub.clusterInfo.gitopsURL}" target="_blank">${hub.clusterInfo.gitopsURL}</a></span>
             </div>
             ` : ''}
             <div class="info-row"><span class="label">Created:</span> <span class="value">${new Date(hub.createdAt).toLocaleString()}</span></div>
