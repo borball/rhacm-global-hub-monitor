@@ -27,7 +27,21 @@ async function fetchHubs() {
 // Render hubs list view
 function renderHubsList(hubs) {
     const totalSpokes = hubs.reduce((sum, hub) => sum + (hub.managedClusters?.length || 0), 0);
-    const totalPolicies = hubs.reduce((sum, hub) => sum + (hub.policiesInfo?.length || 0) + (hub.managedClusters || []).reduce((s, spoke) => s + (spoke.policiesInfo?.length || 0), 0), 0);
+    
+    // Collect all policies from hubs and spokes
+    const allPolicies = [];
+    hubs.forEach(hub => {
+        if (hub.policiesInfo) allPolicies.push(...hub.policiesInfo);
+        if (hub.managedClusters) {
+            hub.managedClusters.forEach(spoke => {
+                if (spoke.policiesInfo) allPolicies.push(...spoke.policiesInfo);
+            });
+        }
+    });
+    
+    const totalPolicies = allPolicies.length;
+    const compliantPolicies = allPolicies.filter(p => p.complianceState === 'Compliant').length;
+    const compliancePercent = totalPolicies > 0 ? Math.round((compliantPolicies / totalPolicies) * 100) : 0;
     const healthyHubs = hubs.filter(h => h.status.toLowerCase().includes('ready')).length;
 
     let html = `
@@ -45,12 +59,12 @@ function renderHubsList(hubs) {
             <div class="card stat-card">
                 <div class="stat-label">Total Policies</div>
                 <div class="stat-number">${totalPolicies}</div>
-                <small>Hub + Spoke policies</small>
+                <small>${compliantPolicies} compliant / ${totalPolicies - compliantPolicies} non-compliant</small>
             </div>
             <div class="card stat-card">
                 <div class="stat-label">Compliance</div>
-                <div class="stat-number">${totalPolicies > 0 ? '100' : '0'}%</div>
-                <small>Overall health</small>
+                <div class="stat-number" style="color: ${compliancePercent === 100 ? '#3e8635' : compliancePercent >= 95 ? '#f0ab00' : '#c9190b'};">${compliancePercent}%</div>
+                <small>${compliantPolicies}/${totalPolicies} policies</small>
             </div>
         </div>
 
@@ -117,6 +131,30 @@ function renderHubsList(hubs) {
     });
     
     html += '</div>';
+    
+    // Unmanaged Hubs section
+    html += `
+        <div style="margin-top: 50px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 class="section-title" style="margin: 0;">Unmanaged Hubs</h2>
+                <button class="btn btn-primary" onclick="showAddHubForm()" style="padding: 10px 20px;">
+                    ➕ Add Hub
+                </button>
+            </div>
+            <div class="card" style="padding: 40px; text-align: center; background: #f9f9f9;">
+                <div style="font-size: 48px; margin-bottom: 15px; opacity: 0.5;">📦</div>
+                <h3 style="color: #6a6e73; margin-bottom: 10px;">No Unmanaged Hubs</h3>
+                <p style="color: #6a6e73; margin-bottom: 20px;">
+                    Add external hub clusters by providing their kubeconfig.<br>
+                    These hubs will be monitored without being managed by this Global Hub.
+                </p>
+                <button class="btn btn-primary" onclick="showAddHubForm()" style="padding: 12px 24px;">
+                    ➕ Add Your First Hub
+                </button>
+            </div>
+        </div>
+    `;
+    
     document.getElementById('app').innerHTML = html;
 }
 
@@ -1340,6 +1378,114 @@ function switchTab(index, hubName) {
                 showError('Cannot reach backend from browser due to CORS. Backend is working - see instructions above.');
             }
         }
+
+// Show add hub form
+function showAddHubForm() {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+        <button class="back-button" onclick="fetchHubs()">← Back to Hubs</button>
+        
+        <h2 class="section-title">Add New Hub</h2>
+        
+        <div class="card" style="max-width: 800px; margin: 0 auto;">
+            <form onsubmit="submitAddHub(event)" style="padding: 20px;">
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Hub Name</label>
+                    <input type="text" id="hub-name" placeholder="e.g., acm3, regional-hub-1" 
+                           required
+                           style="width: 100%; padding: 10px; border: 1px solid #d2d2d2; border-radius: 4px; font-size: 14px;">
+                    <small style="color: #6a6e73;">Alphanumeric with hyphens, will be used as namespace</small>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">
+                        Kubeconfig 
+                        <span style="font-size: 12px; color: #6a6e73; font-weight: normal;">(YAML or JSON format)</span>
+                    </label>
+                    <textarea id="hub-kubeconfig" placeholder="Paste kubeconfig content here (YAML or JSON)..." 
+                              required
+                              rows="15"
+                              style="width: 100%; padding: 10px; border: 1px solid #d2d2d2; border-radius: 4px; font-family: monospace; font-size: 13px;"></textarea>
+                    <small style="color: #6a6e73;">
+                        📝 Supports both YAML and JSON formats<br>
+                        Will be stored as {hub-name}-admin-kubeconfig secret
+                    </small>
+                </div>
+                
+                <div style="margin-bottom: 20px; padding: 15px; background: #e7f4f9; border-radius: 4px; border-left: 4px solid #0066cc;">
+                    <h4 style="margin: 0 0 10px 0; color: #0066cc; font-size: 14px;">💡 How to get kubeconfig:</h4>
+                    <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #6a6e73; line-height: 1.8;">
+                        <li>From hub cluster: <code style="background: white; padding: 2px 6px; border-radius: 3px;">oc get secret {hub}-admin-kubeconfig -n {hub} -o yaml</code></li>
+                        <li>From OpenShift console: Copy kubeconfig from cluster settings</li>
+                        <li>From local kubeconfig: <code style="background: white; padding: 2px 6px; border-radius: 3px;">cat ~/.kube/config</code></li>
+                    </ul>
+                </div>
+                
+                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="fetchHubs()" style="padding: 10px 24px;">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary" style="padding: 10px 24px;">
+                        ➕ Add Hub
+                    </button>
+                </div>
+            </form>
+        </div>
+    `;
+}
+
+// Submit add hub form
+async function submitAddHub(event) {
+    event.preventDefault();
+    
+    const hubName = document.getElementById('hub-name').value.trim();
+    const kubeconfigRaw = document.getElementById('hub-kubeconfig').value.trim();
+    
+    if (!hubName || !kubeconfigRaw) {
+        alert('Please provide both hub name and kubeconfig');
+        return;
+    }
+    
+    // Validate hub name format
+    if (!/^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/.test(hubName)) {
+        alert('Invalid hub name. Must be lowercase alphanumeric with hyphens.');
+        return;
+    }
+    
+    try {
+        // Base64 encode the kubeconfig to avoid JSON escaping issues
+        const kubeconfigBase64 = btoa(kubeconfigRaw);
+        
+        const response = await fetch(`${API_BASE}/hubs/add`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                hubName: hubName,
+                kubeconfig: kubeconfigBase64
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert(
+                `✅ Hub added successfully!\n\n` +
+                `Hub Name: ${data.data.hubName}\n` +
+                `Namespace: ${data.data.namespace}\n` +
+                `Secret: ${data.data.secretName}\n\n` +
+                `The hub will appear in the list after refresh.`
+            );
+            // Reload hubs list
+            fetchHubs();
+        } else {
+            alert('❌ Failed to add hub: ' + (data.error || 'Unknown error'));
+        }
+    } catch (error) {
+        alert('❌ Error adding hub: ' + error.message);
+    }
+}
 
 // Initialize app
 fetchHubs();

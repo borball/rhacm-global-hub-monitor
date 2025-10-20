@@ -13,6 +13,7 @@ func SetupRouter(
 	healthHandler *handlers.HealthHandler,
 	policyHandler *handlers.PolicyHandler,
 	cguHandler *handlers.CGUHandler,
+	hubManagementHandler *handlers.HubManagementHandler,
 	jwtValidator *auth.JWTValidator,
 	authEnabled bool,
 	corsOrigins []string,
@@ -39,6 +40,8 @@ func SetupRouter(
 			hubs.GET("", hubHandler.ListHubs)
 			hubs.GET("/:name", hubHandler.GetHub)
 			hubs.GET("/:name/clusters", hubHandler.ListHubClusters)
+			hubs.POST("/add", hubManagementHandler.AddHub)
+			hubs.DELETE("/:name/remove", hubManagementHandler.RemoveHub)
 		}
 
 		// Policy endpoints
