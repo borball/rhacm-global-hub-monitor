@@ -194,41 +194,58 @@ func (r *RHACMClient) discoverUnmanagedHubs(ctx context.Context, existingHubs ma
 			ManagedClusters: nil,
 		}
 
-		// Try to connect and get basic version/node info for the card
+		// Try to connect and get complete information like managed hubs
 		hubClient, err := NewHubClientFromSecret(ctx, r.kubeClient, nsName)
 		if err == nil {
+			// Get cluster information from ClusterVersion resource
+			cvGVR := schema.GroupVersionResource{
+				Group:    "config.openshift.io",
+				Version:  "v1",
+				Resource: "clusterversions",
+			}
+			cvList, err := hubClient.kubeClient.DynamicClient.Resource(cvGVR).List(ctx, metav1.ListOptions{})
+			if err == nil && len(cvList.Items) > 0 {
+				// Get OpenShift version
+				if status, found, _ := unstructured.NestedMap(cvList.Items[0].Object, "status"); found {
+					if desired, found, _ := unstructured.NestedMap(status, "desired"); found {
+						if version, found, _ := unstructured.NestedString(desired, "version"); found {
+							hub.ClusterInfo.OpenshiftVersion = version
+						}
+					}
+				}
+				// Get cluster ID
+				if spec, found, _ := unstructured.NestedMap(cvList.Items[0].Object, "spec"); found {
+					if clusterID, found, _ := unstructured.NestedString(spec, "clusterID"); found {
+						hub.ClusterInfo.ClusterID = clusterID
+					}
+				}
+			}
+			
+			// Get console URL from console route
+			routeGVR := schema.GroupVersionResource{
+				Group:    "route.openshift.io",
+				Version:  "v1",
+				Resource: "routes",
+			}
+			route, err := hubClient.kubeClient.DynamicClient.Resource(routeGVR).Namespace("openshift-console").Get(ctx, "console", metav1.GetOptions{})
+			if err == nil {
+				if spec, found, _ := unstructured.NestedMap(route.Object, "spec"); found {
+					if host, found, _ := unstructured.NestedString(spec, "host"); found {
+						hub.ClusterInfo.ConsoleURL = "https://" + host
+					}
+				}
+			}
+			
+			// Get nodes and version info
 			nodes, err := hubClient.kubeClient.GetNodes(ctx)
 			if err == nil && len(nodes.Items) > 0 {
 				hub.Status = "Connected"
 				hub.Version = nodes.Items[0].Status.NodeInfo.KubeletVersion
-
-				// Try to get OpenShift version from ClusterVersion resource
-				cvGVR := schema.GroupVersionResource{
-					Group:    "config.openshift.io",
-					Version:  "v1",
-					Resource: "clusterversions",
-				}
-				cvList, err := hubClient.kubeClient.DynamicClient.Resource(cvGVR).List(ctx, metav1.ListOptions{})
-				if err == nil && len(cvList.Items) > 0 {
-					// Get version from status.desired.version
-					if status, found, _ := unstructured.NestedMap(cvList.Items[0].Object, "status"); found {
-						if desired, found, _ := unstructured.NestedMap(status, "desired"); found {
-							if version, found, _ := unstructured.NestedString(desired, "version"); found {
-								hub.ClusterInfo.OpenshiftVersion = version
-							}
-						}
-					}
-				}
-
-				// Get node count for card display
-				uniqueHostnames := make(map[string]bool)
+				hub.ClusterInfo.KubernetesVersion = nodes.Items[0].Status.NodeInfo.KubeletVersion
+				
+				// Convert all nodes
 				for i := range nodes.Items {
 					nodeInfo := ConvertNodeToNodeInfo(&nodes.Items[i])
-					hostname := nodes.Items[i].Name
-					if len(hostname) > 0 {
-						parts := strings.Split(hostname, ".")
-						uniqueHostnames[parts[0]] = true
-					}
 					if nodeInfo.Annotations == nil {
 						nodeInfo.Annotations = make(map[string]string)
 					}
@@ -236,11 +253,17 @@ func (r *RHACMClient) discoverUnmanagedHubs(ctx context.Context, existingHubs ma
 					hub.NodesInfo = append(hub.NodesInfo, nodeInfo)
 				}
 			}
-
-			// Try to get spoke clusters from this hub
+			
+			// Get spoke clusters
 			spokes, err := r.getSpokesClustersFromHub(ctx, nsName)
 			if err == nil {
 				hub.ManagedClusters = spokes
+			}
+			
+			// Get policies
+			policies, err := hubClient.kubeClient.GetPoliciesForNamespace(ctx, nsName)
+			if err == nil {
+				hub.PoliciesInfo = policies
 			}
 		}
 
