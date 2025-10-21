@@ -458,9 +458,9 @@ function renderSpokeDetails(spoke, hubName) {
                     <div style="font-size: 10px; color: #6a6e73; text-transform: uppercase;">Platform</div>
                     <div style="font-size: 13px; font-weight: 600;">${spoke.clusterInfo.platform || 'N/A'}</div>
                 </div>
-                <div style="padding: 10px; background: #e7f4f9; border-radius: 4px; border: 1px solid #0066cc;">
-                    <div style="font-size: 10px; color: #0066cc; text-transform: uppercase;">Config</div>
-                    <div style="font-size: 13px; font-weight: 600;">${spoke.clusterInfo.region || 'N/A'}</div>
+                <div class="spoke-stat-card">
+                    <div class="spoke-stat-label">Config</div>
+                    <div class="spoke-stat-value">${spoke.clusterInfo.region || 'N/A'}</div>
                 </div>
                 <div style="padding: 10px; background: #e7f1e7; border-radius: 4px; border: 1px solid #3e8635;">
                     <div style="font-size: 10px; color: #3e8635; text-transform: uppercase;">Policies</div>
@@ -1190,11 +1190,11 @@ function renderPolicies(policies) {
     const compliantCount = sortedPolicies.filter(p => p.complianceState === 'Compliant').length;
     
     let html = `
-        <div class="card" style="margin-bottom: 20px; background: #e7f1e7;">
+        <div class="card compliance-card">
             <div style="text-align: center;">
-                <h3 style="border: none; margin-bottom: 8px;">Policy Compliance</h3>
-                <div style="font-size: 2.5rem; font-weight: 700; color: #3e8635;">${compliantCount}/${sortedPolicies.length}</div>
-                <p style="color: #3e8635; font-weight: 600;">Policies Compliant</p>
+                <h3>Policy Compliance</h3>
+                <div class="compliance-number">${compliantCount}/${sortedPolicies.length}</div>
+                <p class="compliance-text">Policies Compliant</p>
             </div>
         </div>
         
@@ -1332,8 +1332,8 @@ function renderPolicyDetails(policy) {
             
             ${policy.annotations?.['latest-status-message'] ? `
             <!-- Latest Status - Full Width -->
-            <div style="margin-bottom: 20px; padding: 20px; background: ${policy.complianceState?.toLowerCase() === 'compliant' ? '#e7f1e7' : '#fff4e5'}; border-left: 4px solid ${policy.complianceState?.toLowerCase() === 'compliant' ? '#3e8635' : '#f0ab00'}; border-radius: 4px;">
-                <h4 style="margin: 0 0 12px 0; color: ${policy.complianceState?.toLowerCase() === 'compliant' ? '#3e8635' : '#8b4513'}; display: flex; align-items: center; gap: 8px;">
+            <div class="${policy.complianceState?.toLowerCase() === 'compliant' ? 'policy-message-compliant' : 'policy-message-noncompliant'}" style="margin-bottom: 20px; padding: 20px; border-radius: 4px;">
+                <h4 style="margin: 0 0 12px 0; color: ${policy.complianceState?.toLowerCase() === 'compliant' ? 'var(--badge-green-text)' : 'var(--status-notready-text)'}; display: flex; align-items: center; gap: 8px;">
                     <span style="font-size: 20px;">📋</span>
                     <span>Latest Status Message</span>
                 </h4>
@@ -1510,8 +1510,8 @@ function showAddHubForm() {
                         <small style="color: #6a6e73;">Full API server URL including port</small>
                     </div>
                     
-                    <div style="margin-bottom: 15px; padding: 12px; background: #fff4e5; border-radius: 4px; border-left: 3px solid #f0ab00;">
-                        <strong style="color: #8b4513;">Choose authentication method:</strong>
+                    <div class="info-box" style="margin-bottom: 15px;">
+                        <strong>Choose authentication method:</strong>
                     </div>
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
