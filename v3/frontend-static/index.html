@@ -32,8 +32,10 @@
     <script>
         // Theme management - load before app.js
         function toggleTheme() {
+            console.log('Theme toggle clicked!');
             const body = document.body;
             const isDark = body.classList.toggle('dark-mode');
+            console.log('Dark mode:', isDark);
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
             updateThemeButton(isDark);
         }
@@ -41,25 +43,34 @@
         function updateThemeButton(isDark) {
             const icon = document.getElementById('theme-icon');
             const text = document.getElementById('theme-text');
-            if (isDark) {
-                icon.textContent = '☀️';
-                text.textContent = 'Light Mode';
+            if (icon && text) {
+                if (isDark) {
+                    icon.textContent = '☀️';
+                    text.textContent = 'Light';
+                } else {
+                    icon.textContent = '🌙';
+                    text.textContent = 'Dark';
+                }
+                console.log('Theme button updated:', isDark ? 'dark' : 'light');
             } else {
-                icon.textContent = '🌙';
-                text.textContent = 'Dark Mode';
+                console.error('Theme button elements not found!');
             }
         }
         
         // Apply saved theme on page load
         (function() {
             const savedTheme = localStorage.getItem('theme');
+            console.log('Saved theme:', savedTheme);
             if (savedTheme === 'dark') {
                 document.body.classList.add('dark-mode');
-                updateThemeButton(true);
+                // Delay to ensure elements exist
+                setTimeout(() => updateThemeButton(true), 100);
             }
         })();
+        
+        console.log('Theme toggle script loaded successfully');
     </script>
-    <script src="app.js?v=20251101"></script>
+    <script src="app.js?v=20251102"></script>
 </body>
 </html>
 
