@@ -5,37 +5,49 @@
 }
 
 :root {
-    /* Light mode colors (default) */
-    --bg-primary: #f0f0f0;
+    /* Light mode colors - Modern Professional */
+    --bg-primary: #f5f7fa;
     --bg-secondary: #ffffff;
-    --bg-tertiary: #f9f9f9;
-    --bg-accent: #e7f4f9;
-    --text-primary: #151515;
-    --text-secondary: #6a6e73;
+    --bg-tertiary: #f0f2f5;
+    --bg-accent: #e7f2ff;
+    --bg-card-hover: #fafbfc;
+    --text-primary: #1f2937;
+    --text-secondary: #6b7280;
     --text-link: #0066cc;
-    --border-color: #d2d2d2;
-    --shadow: rgba(0, 0, 0, 0.1);
-    --status-ready-bg: #e7f1e7;
-    --status-ready-text: #3e8635;
-    --status-notready-bg: #fef0e6;
-    --status-notready-text: #ec7a08;
+    --border-color: #e5e7eb;
+    --shadow: rgba(0, 0, 0, 0.08);
+    --shadow-hover: rgba(0, 0, 0, 0.12);
+    --status-ready-bg: #d1fae5;
+    --status-ready-text: #065f46;
+    --status-notready-bg: #fed7aa;
+    --status-notready-text: #92400e;
+    --badge-blue-bg: #dbeafe;
+    --badge-blue-text: #1e40af;
+    --badge-green-bg: #d1fae5;
+    --badge-green-text: #065f46;
 }
 
 body.dark-mode {
-    /* Dark mode colors */
-    --bg-primary: #1a1a1a;
-    --bg-secondary: #2d2d2d;
-    --bg-tertiary: #242424;
-    --bg-accent: #1e3a4f;
-    --text-primary: #e8e8e8;
-    --text-secondary: #b0b0b0;
-    --text-link: #4da3ff;
-    --border-color: #404040;
-    --shadow: rgba(0, 0, 0, 0.3);
-    --status-ready-bg: #1e3a1e;
-    --status-ready-text: #6dd26d;
-    --status-notready-bg: #3a2e1e;
-    --status-notready-text: #ffaa44;
+    /* Dark mode colors - Modern Dark UI */
+    --bg-primary: #0f1419;
+    --bg-secondary: #1c2128;
+    --bg-tertiary: #22272e;
+    --bg-accent: #2d3748;
+    --bg-card-hover: #2a3038;
+    --text-primary: #e6edf3;
+    --text-secondary: #9ca3af;
+    --text-link: #58a6ff;
+    --border-color: #373e47;
+    --shadow: rgba(0, 0, 0, 0.4);
+    --shadow-hover: rgba(0, 0, 0, 0.6);
+    --status-ready-bg: #1a3a2a;
+    --status-ready-text: #6ee7b7;
+    --status-notready-bg: #3d2817;
+    --status-notready-text: #fbbf24;
+    --badge-blue-bg: #1e3a5f;
+    --badge-blue-text: #60a5fa;
+    --badge-green-bg: #1a3a2a;
+    --badge-green-text: #6ee7b7;
 }
 
 body {
@@ -127,7 +139,8 @@ body {
 
 .card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 12px var(--shadow-hover);
+    background: var(--bg-card-hover);
 }
 
 .card h3 {
@@ -190,16 +203,18 @@ body {
 }
 
 .badge {
-    background: #0066cc;
-    color: white;
+    background: var(--badge-blue-bg);
+    color: var(--badge-blue-text);
     padding: 4px 10px;
     border-radius: 12px;
     font-size: 13px;
     font-weight: 600;
+    transition: all 0.3s ease;
 }
 
 .badge.success {
-    background: #3e8635;
+    background: var(--badge-green-bg);
+    color: var(--badge-green-text);
 }
 
 .btn {
@@ -309,10 +324,11 @@ body {
 
 .section-title {
     font-size: 1.8rem;
-    color: #151515;
+    color: var(--text-primary);
     margin: 30px 0 20px;
     padding-bottom: 12px;
     border-bottom: 3px solid #0066cc;
+    transition: color 0.3s ease;
 }
 
 table {
@@ -327,12 +343,14 @@ th, td {
 }
 
 th {
-    background: #f0f0f0;
+    background: var(--bg-tertiary);
     font-weight: 600;
+    color: var(--text-primary);
+    transition: all 0.3s ease;
 }
 
 tr:hover {
-    background: #f9f9f9;
+    background: var(--bg-accent);
 }
 
 .console-link {
