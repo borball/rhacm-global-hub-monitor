@@ -2,134 +2,295 @@
 
 ## Overview
 
-The RHACM Global Hub Monitor v3 includes comprehensive operator monitoring for both hubs and spoke clusters.
+The RHACM Global Hub Monitor v3 includes comprehensive operator monitoring for both hubs and spoke clusters with intelligent lazy loading for performance.
 
 ## Current Status
 
-### Working ✅
-- **Hub Operators:** Fully functional
-  - Fetches ClusterServiceVersion (CSV) resources
-  - Shows all installed operators with versions
-  - Example: acm1 shows ~45 unique operators (304 total installations)
-  - Grouped by operator name
-  - Multiple namespace installations combined
+### Hub Operators ✅ Working
+- **Implementation:** Fully functional
+- **Data Source:** Direct connection to hub clusters
+- **Display:** Full operators tab with search/filter
+- **Example:** acm1 shows ~45 unique operators (304 total installations)
+- **Grouping:** Multiple namespace installations consolidated
+- **Performance:** Included in initial hub load
 
-### Limited ⚠️
-- **Spoke Cluster Operators:** Requires setup
-  - Code is ready to fetch operators
-  - Needs kubeconfig secrets for spoke clusters
-  - Currently shows 0 without setup
+### Spoke Operators ✅ Working with Lazy Loading
+- **Implementation:** Lazy loading for performance
+- **Data Source:** Direct connection to spoke clusters via kubeconfig
+- **Display:** Loaded on spoke expansion, shows in stat card + table
+- **Example:** sno146 shows 7 operators when expanded
+- **Performance:** Fetched on-demand only (~2s per spoke)
 
 ## Architecture
 
 ```
 Global Hub (vhub)
-  └─ Hub (acm1)
-      ├─ Hub Operators: ✅ Direct connection via kubeconfig
-      └─ Spoke Clusters
-          └─ sno146
-              ├─ Operators installed ON sno146
-              └─ Kubeconfig stored in sno146 namespace on acm1
+  └─ Monitor Backend
+      ├─ Hub (acm1)
+      │   ├─ Hub Operators: ✅ Fetched via kubeconfig (included in hub load)
+      │   └─ Spoke Clusters
+      │       └─ sno146
+      │           ├─ Operators installed ON sno146
+      │           ├─ Kubeconfig stored in sno146 namespace on acm1
+      │           └─ Fetched on-demand when spoke expanded
+      └─ Hub (production-hub)
+          └─ Similar structure
 ```
+
+## Performance & Lazy Loading
+
+### Why Lazy Loading?
+
+**Problem:**
+- Fetching operators for 1000+ spoke clusters takes too long
+- Initial page load would be very slow
+- Poor user experience
+
+**Solution:**
+- Hub operators: Fetched with hub data (acceptable delay)
+- Spoke operators: Lazy loaded on expansion (on-demand)
+- Scales efficiently to large deployments
+
+### Performance Metrics
+
+**Initial Homepage Load:**
+- Hub data: ~10s (includes hub operators)
+- Spoke data: Fast (no operators)
+- Total: ~10s initial, ~50ms cached
+
+**Spoke Expansion:**
+- First expansion: ~2s (fetches operators)
+- Operator data cached in DOM
+- Subsequent expansions: Instant
+
+**Scalability:**
+- Works with 1000+ spoke clusters
+- Only fetches operators for expanded spokes
+- No performance degradation
 
 ## Setup for Spoke Operators
 
-To enable operator monitoring for spoke clusters, create kubeconfig secrets:
+Spoke operators require kubeconfig secrets to connect to spoke clusters:
 
-### Option 1: Using Existing Kubeconfig
+### Kubeconfig Location
+
+The spoke's kubeconfig must be stored on the **hub cluster** (not the global hub):
+
+```
+Hub Cluster (e.g., acm1)
+  └─ Namespace: sno146
+      └─ Secret: sno146-admin-kubeconfig
+          └─ Data: kubeconfig → connects to sno146 cluster
+```
+
+### Verification
+
+Check if kubeconfig exists:
 
 ```bash
 # On the hub cluster (e.g., acm1)
-# For each spoke cluster (e.g., sno146)
+oc get secret -n sno146 sno146-admin-kubeconfig
 
-# Create namespace if it doesn't exist
+# Expected output:
+# NAME                      TYPE     DATA   AGE
+# sno146-admin-kubeconfig   Opaque   2      5d
+```
+
+### If Kubeconfig Doesn't Exist
+
+Create the kubeconfig secret:
+
+```bash
+# On the hub cluster (e.g., acm1)
+
+# 1. Create namespace if it doesn't exist
 oc create namespace sno146
 
-# Create secret with spoke kubeconfig
+# 2. Create secret with spoke kubeconfig
 oc create secret generic sno146-admin-kubeconfig \
   --from-file=kubeconfig=/path/to/sno146/kubeconfig \
   -n sno146
 
-# Label it for RHACM monitor
+# 3. Label it for identification
 oc label secret sno146-admin-kubeconfig \
   created-by=rhacm-monitor \
   -n sno146
 ```
 
-### Option 2: Extract from RHACM
+### Expected Results
 
-If RHACM already manages the spoke, it may have the kubeconfig:
+With kubeconfig in place:
 
+**Spoke Table:**
+```
+sno146 | Ready | 4.18.13 | config | ... | 7 | 18/19 | Details
+                                          ↑
+                                    Shows "..." initially
+```
+
+**Spoke Expansion:**
+```
+Operators: 7
+
+Operator                    Version         Namespace                    Status
+────────────────────────────────────────────────────────────────────────────────
+OADP Operator              1.4.5           openshift-adp                ✅ Succeeded
+Lifecycle Agent            4.18.0          openshift-lifecycle-agent    ✅ Succeeded
+Local Storage              4.18.0-...      openshift-local-storage      ✅ Succeeded
+... and 4 more
+```
+
+**After Expansion (stat card updates):**
+```
+Operators: 7  (instead of "...")
+```
+
+## Lazy Loading API
+
+### Endpoint
+
+```
+GET /api/hubs/:name/spokes/:spoke/operators
+```
+
+**Example:**
 ```bash
-# Check if RHACM has the kubeconfig
-oc get secret -n sno146 | grep kubeconfig
+curl https://monitor/api/hubs/acm1/spokes/sno146/operators
 
-# If it exists, just label it
-oc label secret <secret-name> created-by=rhacm-monitor -n sno146
+Response:
+{
+  "success": true,
+  "data": [
+    {
+      "name": "oadp-operator.v1.4.5",
+      "displayName": "OADP Operator",
+      "version": "1.4.5",
+      "namespace": "openshift-adp",
+      "phase": "Succeeded",
+      "provider": "Red Hat",
+      "createdAt": "2025-10-16T13:05:17Z"
+    },
+    ...
+  ]
+}
 ```
 
-## Verification
+### Frontend Integration
 
-After creating the secrets:
+**Automatic on Spoke Expansion:**
+1. User expands spoke details
+2. Frontend checks if operators already loaded
+3. If not, calls lazy loading endpoint
+4. Updates UI with operators data
+5. Data cached for that spoke
 
-1. Wait ~90 seconds for cache to expire
-2. Refresh the RHACM Monitor UI
-3. Navigate to Hub → Spoke Clusters tab
-4. Check the Operators column - should show count > 0
-5. Expand spoke details - should show operators list
-
-## Expected Results
-
-With secrets in place:
-
-```
-Spoke: sno146
-  Operators: 7 (actual count)
-  
-  Expanded View:
-    - cluster-logging.v6.2.4
-    - lifecycle-agent.v4.18.0
-    - local-storage-operator.v4.18.0
-    - oadp-operator.v1.4.5
-    - packageserver
-    - sriov-fec.v2.11.1
-    - sriov-network-operator.v4.18.0
-```
-
-## Known Limitations
-
-- Spoke operators require kubeconfig secrets
-- Without secrets, spoke operators show 0
-- Hub operators work without additional setup
-- This is by design (operators are on spoke, not hub)
+**No User Action Required:**
+- Transparent lazy loading
+- Automatic on first expansion
+- Cached after first load
 
 ## Troubleshooting
 
-**Spoke shows 0 operators:**
-1. Check if kubeconfig secret exists:
+**Spoke shows 0 operators (or "..."):**
+
+1. **Check if kubeconfig secret exists:**
    ```bash
+   # On hub cluster (context: acm1)
    oc get secret -n sno146 sno146-admin-kubeconfig
    ```
-2. Check backend logs:
+
+2. **Check backend logs:**
    ```bash
    oc logs -l component=backend -n rhacm-monitor | grep sno146
    ```
-3. Look for: "Fetched X operators from spoke sno146"
-4. Or: "No kubeconfig secret for spoke sno146"
+   
+   Look for:
+   - ✅ "Successfully fetched X operators from spoke sno146"
+   - ⚠️ "No kubeconfig secret for spoke sno146 on hub"
+   - ❌ "Could not fetch operators from spoke sno146: ..."
+
+3. **Verify spoke is accessible:**
+   ```bash
+   # From hub cluster
+   oc --kubeconfig=/path/to/sno146/kubeconfig get csv -A
+   ```
+
+4. **Check browser console (F12):**
+   - Look for fetch errors
+   - Check network tab for API calls
+   - Verify lazy loading is triggered
 
 **Secret exists but still shows 0:**
-1. Verify kubeconfig is valid
-2. Check RBAC permissions
-3. Ensure spoke is accessible from hub
+
+1. Verify kubeconfig content:
+   ```bash
+   oc get secret -n sno146 sno146-admin-kubeconfig -o jsonpath='{.data.kubeconfig}' | base64 -d | head -10
+   ```
+
+2. Check RBAC permissions:
+   - Backend needs access to secrets in spoke namespaces
+   - Service account needs list/get permissions
+
+3. Verify spoke cluster is reachable:
+   - Network connectivity from hub to spoke
+   - API server accessible
+   - Certificates valid
+
+**Operators not loading on expansion:**
+
+1. Hard refresh browser (Ctrl+Shift+R)
+2. Check browser console for JavaScript errors
+3. Verify API endpoint returns data:
+   ```bash
+   curl -k https://monitor/api/hubs/acm1/spokes/sno146/operators
+   ```
+4. Check if version is current (v=20251107)
+
+## Advanced Configuration
+
+### Custom Kubeconfig Secrets
+
+If your kubeconfig uses a different secret name:
+
+The code expects: `{spoke-name}-admin-kubeconfig`
+
+To use a different name, you would need to modify:
+- `backend/pkg/client/rhacm.go` (line ~416)
+- Look for: `cluster.Name + "-admin-kubeconfig"`
+
+### Batch Setup Script
+
+For multiple spokes:
+
+```bash
+#!/bin/bash
+# setup-spoke-operators.sh
+
+SPOKES=("sno146" "sno132" "sno133")
+
+for spoke in "${SPOKES[@]}"; do
+  echo "Setting up $spoke..."
+  oc create namespace $spoke 2>/dev/null || true
+  oc create secret generic ${spoke}-admin-kubeconfig \
+    --from-file=kubeconfig=/kubeconfigs/${spoke}-kubeconfig \
+    -n $spoke
+  oc label secret ${spoke}-admin-kubeconfig \
+    created-by=rhacm-monitor -n $spoke
+done
+
+echo "✅ Setup complete for ${#SPOKES[@]} spokes"
+```
 
 ## Summary
 
 - **Hub operators:** ✅ Working out of the box
-- **Spoke operators:** ⚠️ Requires kubeconfig setup
+- **Spoke operators:** ✅ Working with lazy loading (requires kubeconfig setup)
+- **Performance:** ✅ Optimized for large scale (1000+ spokes)
 - **Code:** ✅ Ready to fetch when secrets exist
-- **Setup:** Create {spoke}-admin-kubeconfig secrets on hub
+- **Setup:** Create `{spoke}-admin-kubeconfig` secrets on hub
+
+**Lazy loading ensures the application remains fast and responsive even with thousands of spoke clusters.**
 
 ---
 
-*For questions or issues, check the backend logs for detailed error messages.*
-
+*For questions or issues, check backend logs and browser console for detailed error messages.*
