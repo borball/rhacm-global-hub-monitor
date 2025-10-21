@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -38,6 +39,7 @@ func (h *HubHandler) ListHubs(c *gin.Context) {
 	// Try cache first
 	cacheKey := "hubs:list"
 	if cached, found := h.cache.Get(cacheKey); found {
+		log.Println("Cache HIT for hubs:list")
 		c.JSON(http.StatusOK, models.APIResponse{
 			Success: true,
 			Data:    cached,
@@ -46,6 +48,7 @@ func (h *HubHandler) ListHubs(c *gin.Context) {
 	}
 
 	// Cache miss - fetch from clusters
+	log.Println("Cache MISS for hubs:list - fetching fresh data")
 	hubs, err := h.rhacmClient.GetManagedHubs(ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.APIResponse{
@@ -56,6 +59,7 @@ func (h *HubHandler) ListHubs(c *gin.Context) {
 	}
 
 	// Store in cache
+	log.Printf("Storing hubs:list in cache with 30-minute TTL")
 	h.cache.Set(cacheKey, hubs)
 
 	c.JSON(http.StatusOK, models.APIResponse{
