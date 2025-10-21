@@ -415,10 +415,10 @@ func (r *RHACMClient) getSpokesClustersFromHub(ctx context.Context, hubName stri
 		spokeOperators := []models.OperatorInfo{}
 		spokeSecret, err := hubClient.kubeClient.ClientSet.CoreV1().Secrets(cluster.Name).Get(ctx, cluster.Name+"-admin-kubeconfig", metav1.GetOptions{})
 		if err == nil && spokeSecret.Data["kubeconfig"] != nil {
-			// Create client for spoke using its kubeconfig
-			spokeClient, err := NewKubeClientFromKubeconfig(spokeSecret.Data["kubeconfig"])
+			// Create client for spoke using its kubeconfig (similar to NewHubClientFromSecret)
+			spokeKubeClient, err := NewKubeClient(string(spokeSecret.Data["kubeconfig"]))
 			if err == nil {
-				operators, err := spokeClient.GetOperators(ctx)
+				operators, err := spokeKubeClient.GetOperators(ctx)
 				if err == nil {
 					spokeOperators = operators
 					fmt.Printf("Info: Fetched %d operators from spoke %s\n", len(operators), cluster.Name)
