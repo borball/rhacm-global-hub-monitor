@@ -50,6 +50,7 @@ func main() {
 	policyHandler := handlers.NewPolicyHandler(kubeClient, rhacmClient)
 	cguHandler := handlers.NewCGUHandler(kubeClient, rhacmClient)
 	hubManagementHandler := handlers.NewHubManagementHandler(kubeClient)
+	spokeHandler := handlers.NewSpokeHandler(rhacmClient, kubeClient)
 
 	// Setup router
 	router := api.SetupRouter(
@@ -58,6 +59,7 @@ func main() {
 		policyHandler,
 		cguHandler,
 		hubManagementHandler,
+		spokeHandler,
 		jwtValidator,
 		cfg.EnableAuth,
 		cfg.CORSOrigins,

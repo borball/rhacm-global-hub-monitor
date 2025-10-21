@@ -43,7 +43,7 @@ func SetupRouter(
 			hubs.GET("/:name/clusters", hubHandler.ListHubClusters)
 			hubs.POST("/add", hubManagementHandler.AddHub)
 			hubs.DELETE("/:name/remove", hubManagementHandler.RemoveHub)
-			
+
 			// Spoke lazy loading endpoints (inside hubs group)
 			hubs.GET("/:hub/spokes/:spoke/operators", spokeHandler.GetSpokeOperators)
 		}
