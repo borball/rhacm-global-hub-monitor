@@ -489,21 +489,23 @@ a:hover {
 
 /* Summary cards in policy details */
 .policy-summary-card {
-    padding: 15px;
+    padding: 10px;
     background: var(--bg-secondary);
-    border-radius: 6px;
+    border-radius: 4px;
     border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
 }
 
 .policy-summary-label {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--text-secondary);
     text-transform: uppercase;
-    margin-bottom: 5px;
+    margin-bottom: 4px;
+    letter-spacing: 0.5px;
 }
 
 .policy-summary-value {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--text-primary);
 }
@@ -518,13 +520,13 @@ a:hover {
 /* Code blocks */
 .code-block {
     background: var(--bg-tertiary);
-    padding: 15px;
+    padding: 10px;
     border-radius: 4px;
     font-family: 'Courier New', monospace;
-    font-size: 14px;
-    line-height: 1.8;
+    font-size: 12px;
+    line-height: 1.6;
     color: var(--text-primary);
-    max-height: 200px;
+    max-height: 150px;
     overflow-y: auto;
     white-space: pre-wrap;
     word-break: break-word;
