@@ -82,7 +82,8 @@ function renderHubsList(hubs) {
                     🔄 Refresh
                 </button>
             </div>
-            <div class="grid">
+            <div class="managed-hubs-section">
+                <div class="grid">
         `;
         
         managedHubs.forEach(hub => {
@@ -144,7 +145,7 @@ function renderHubsList(hubs) {
         `;
         });
         
-        html += '</div>';
+        html += '</div></div>'; // Close grid and managed-hubs-section
     }
     
     // Unmanaged Hubs section
@@ -162,6 +163,7 @@ function renderHubsList(hubs) {
                     </button>
                 </div>
             </div>
+            <div class="unmanaged-hubs-section">
     `;
     
     if (unmanagedHubs.length > 0) {
@@ -231,7 +233,7 @@ function renderHubsList(hubs) {
         `;
     }
     
-    html += '</div>';
+    html += '</div></div>'; // Close unmanaged-hubs-section and container div
     
     document.getElementById('app').innerHTML = html;
 }
@@ -1759,17 +1761,179 @@ async function submitAddHub(event) {
     }
 }
 
-// Refresh hubs (clears cache and reloads)
+// Refresh hubs (clears cache and reloads only hub sections)
 async function refreshHubs() {
+    // Show loading state in hub sections
+    const managedSection = document.querySelector('.managed-hubs-section');
+    const unmanagedSection = document.querySelector('.unmanaged-hubs-section');
+    
+    if (managedSection) {
+        managedSection.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">🔄 Refreshing...</div>';
+    }
+    if (unmanagedSection) {
+        unmanagedSection.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">🔄 Refreshing...</div>';
+    }
+    
     try {
         // Call refresh endpoint to clear cache
         await fetch(`${API_BASE}/hubs/refresh`, { method: 'POST' });
-        // Reload hubs data
-        fetchHubs();
+        
+        // Fetch fresh hub data
+        const response = await fetch(`${API_BASE}/hubs`);
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+            // Re-render only the hub sections
+            renderHubSections(data.data);
+        } else {
+            throw new Error(data.error || 'Failed to fetch hubs');
+        }
     } catch (error) {
         console.error('Error refreshing hubs:', error);
-        // Reload anyway
+        // Fall back to full page reload on error
         fetchHubs();
+    }
+}
+
+// Render just the hub sections (for refresh)
+function renderHubSections(hubs) {
+    const managedHubs = hubs.filter(h => h.annotations?.source !== 'manual');
+    const unmanagedHubs = hubs.filter(h => h.annotations?.source === 'manual');
+    
+    // Render managed hubs section
+    const managedSection = document.querySelector('.managed-hubs-section');
+    if (managedSection) {
+        if (managedHubs.length > 0) {
+            let html = '<div class="grid">';
+            managedHubs.forEach(hub => {
+                const statusClass = hub.status.toLowerCase().includes('ready') || hub.status.toLowerCase().includes('connected') ? 'ready' : 'notready';
+                const spokeCount = hub.managedClusters?.length || 0;
+                const policyCount = hub.policiesInfo?.length || 0;
+                
+                const uniqueHostnames = new Set();
+                (hub.nodesInfo || []).forEach(node => {
+                    uniqueHostnames.add(node.name.split('.')[0]);
+                });
+                const nodeCount = uniqueHostnames.size;
+                
+                html += `
+                    <div class="card">
+                        <h3>
+                            <span>${hub.name}</span>
+                            <span class="status ${statusClass}">${hub.status}</span>
+                        </h3>
+                        <div class="info-row">
+                            <span class="label">OpenShift Version:</span>
+                            <span class="value">${hub.clusterInfo.openshiftVersion || 'N/A'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Kubernetes:</span>
+                            <span class="value">${hub.version || 'N/A'}</span>
+                        </div>
+                        ${hub.clusterInfo.region ? `
+                        <div class="info-row">
+                            <span class="label">Configuration:</span>
+                            <span class="value"><code class="config-badge">${hub.clusterInfo.region}</code></span>
+                        </div>
+                        ` : ''}
+                        <div class="info-row">
+                            <span class="label">Nodes:</span>
+                            <span class="value"><span class="badge">${nodeCount}</span></span>
+                        </div>
+                        ${policyCount > 0 ? `
+                        <div class="info-row">
+                            <span class="label">Policies:</span>
+                            <span class="value"><span class="badge success">${policyCount}</span></span>
+                        </div>
+                        ` : ''}
+                        <div class="info-row">
+                            <span class="label">Spoke Clusters:</span>
+                            <span class="value"><span class="badge">${spokeCount}</span></span>
+                        </div>
+                        ${hub.clusterInfo.consoleURL || hub.clusterInfo.gitopsURL ? `
+                        <div class="info-row" style="display: flex; gap: 10px; justify-content: space-between;">
+                            ${hub.clusterInfo.consoleURL ? \`<a href="${hub.clusterInfo.consoleURL}" target="_blank" class="console-link">🖥️ Console</a>\` : '<span></span>'}
+                            ${hub.clusterInfo.gitopsURL ? \`<a href="${hub.clusterInfo.gitopsURL}" target="_blank" class="console-link">🔄 GitOps</a>\` : '<span></span>'}
+                        </div>
+                        ` : ''}
+                        <button class="btn btn-primary" onclick="showHubDetails('${hub.name}')" style="width: 100%; margin-top: 12px;">
+                            View Details
+                        </button>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            managedSection.innerHTML = html;
+        }
+    }
+    
+    // Render unmanaged hubs section
+    const unmanagedSection = document.querySelector('.unmanaged-hubs-section');
+    if (unmanagedSection) {
+        if (unmanagedHubs.length > 0) {
+            let html = '<div class="grid">';
+            unmanagedHubs.forEach(hub => {
+                const statusClass = hub.status.toLowerCase() === 'ready' || hub.status.toLowerCase() === 'connected' ? 'ready' : 'notready';
+                const spokeCount = hub.managedClusters?.length || 0;
+                const policyCount = hub.policiesInfo?.length || 0;
+                
+                const uniqueHostnames = new Set();
+                (hub.nodesInfo || []).forEach(node => {
+                    uniqueHostnames.add(node.name.split('.')[0]);
+                });
+                const nodeCount = uniqueHostnames.size;
+                
+                html += `
+                    <div class="card">
+                        <h3>
+                            <span>${hub.name}</span>
+                            <span class="status ${statusClass}">${hub.status}</span>
+                        </h3>
+                        <div class="info-row">
+                            <span class="label">OpenShift Version:</span>
+                            <span class="value">${hub.clusterInfo.openshiftVersion || 'N/A'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Kubernetes:</span>
+                            <span class="value">${hub.version || 'Unknown'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Nodes:</span>
+                            <span class="value"><span class="badge">${nodeCount}</span></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Spoke Clusters:</span>
+                            <span class="value"><span class="badge">${spokeCount}</span></span>
+                        </div>
+                        ${hub.clusterInfo.consoleURL || hub.clusterInfo.gitopsURL ? \`
+                        <div class="info-row" style="display: flex; gap: 10px; justify-content: space-between;">
+                            ${hub.clusterInfo.consoleURL ? \\\`<a href="${hub.clusterInfo.consoleURL}" target="_blank" class="console-link">🖥️ Console</a>\\\` : '<span></span>'}
+                            ${hub.clusterInfo.gitopsURL ? \\\`<a href="${hub.clusterInfo.gitopsURL}" target="_blank" class="console-link">🔄 GitOps</a>\\\` : '<span></span>'}
+                        </div>
+                        \` : ''}
+                        <button class="btn btn-primary" onclick="showHubDetails('${hub.name}')" style="width: 100%; margin-top: 12px;">
+                            View Details
+                        </button>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            unmanagedSection.innerHTML = html;
+        } else {
+            unmanagedSection.innerHTML = `
+                <div class="card" style="padding: 40px; text-align: center; background: var(--bg-tertiary);">
+                    <div style="font-size: 48px; margin-bottom: 15px; opacity: 0.5;">📦</div>
+                    <h3 style="color: var(--text-secondary); margin-bottom: 10px;">No Unmanaged Hubs</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                        ${managedHubs.length === 0 ? 'No hubs discovered automatically.' : 'Add external hub clusters by providing their kubeconfig.'}<br>
+                        ${managedHubs.length === 0 ? 'Add your first hub to start monitoring.' : 'These hubs will be monitored without being managed by this Global Hub.'}
+                    </p>
+                    <button class="btn btn-primary" onclick="showAddHubForm()" style="padding: 12px 24px;">
+                        ➕ Add Your First Hub
+                    </button>
+                </div>
+            `;
+        }
     }
 }
 
