@@ -11,8 +11,12 @@
     --bg-tertiary: #f0f2f5;
     --bg-accent: #e7f2ff;
     --bg-card-hover: #fafbfc;
+    --bg-k8s-section: #e7f4f9;
+    --bg-hardware-section: #fff4e5;
     --text-primary: #1f2937;
     --text-secondary: #6b7280;
+    --text-k8s: #004080;
+    --text-hardware: #8b4513;
     --text-link: #0066cc;
     --border-color: #e5e7eb;
     --shadow: rgba(0, 0, 0, 0.08);
@@ -34,8 +38,12 @@ body.dark-mode {
     --bg-tertiary: #22272e;
     --bg-accent: #2d3748;
     --bg-card-hover: #2a3038;
+    --bg-k8s-section: #1a2332;
+    --bg-hardware-section: #2a2117;
     --text-primary: #e6edf3;
     --text-secondary: #9ca3af;
+    --text-k8s: #58a6ff;
+    --text-hardware: #fbbf24;
     --text-link: #58a6ff;
     --border-color: #373e47;
     --shadow: rgba(0, 0, 0, 0.4);

@@ -109,7 +109,7 @@ function renderHubsList(hubs) {
                 ${hub.clusterInfo.region ? `
                 <div class="info-row">
                     <span class="label">Configuration:</span>
-                    <span class="value"><code style="background: #e7f4f9; padding: 2px 8px; border-radius: 4px; color: #0066cc; font-size: 12px;">${hub.clusterInfo.region}</code></span>
+                    <span class="value"><code class="config-badge">${hub.clusterInfo.region}</code></span>
                 </div>
                 ` : ''}
                 <div class="info-row">
@@ -307,7 +307,7 @@ function renderHubOverview(hub) {
             ${hub.clusterInfo.region ? `
             <div class="info-row">
                 <span class="label">Configuration Version:</span>
-                <span class="value"><strong style="color: #0066cc; background: #e7f4f9; padding: 4px 12px; border-radius: 4px; font-size: 14px;">${hub.clusterInfo.region}</strong></span>
+                <span class="value"><strong class="config-badge" style="padding: 4px 12px; font-size: 14px;">${hub.clusterInfo.region}</strong></span>
             </div>
             ` : ''}
             <div class="info-row"><span class="label">Cluster ID:</span> <span class="value"><small style="font-family: monospace;">${hub.clusterInfo.clusterID}</small></span></div>
@@ -395,7 +395,7 @@ function renderSpokes(spokes, hubName) {
                 <td><strong>${spoke.name}</strong></td>
                 <td><span class="status ${statusClass}">${spoke.status}</span></td>
                 <td>${spoke.clusterInfo.openshiftVersion || 'N/A'}</td>
-                <td><code style="background: #e7f4f9; padding: 2px 8px; border-radius: 4px; color: #0066cc; font-size: 12px;">${spoke.clusterInfo.region || 'N/A'}</code></td>
+                <td><code class="config-badge">${spoke.clusterInfo.region || 'N/A'}</code></td>
                 <td>${spoke.clusterInfo.platform || 'N/A'}</td>
                 <td><span class="badge">${nodeCount}</span></td>
                 <td><span class="badge ${compliantPolicies === policyCount ? 'success' : 'warning'}">${compliantPolicies}/${policyCount}</span></td>
@@ -993,8 +993,8 @@ function renderMergedNodeCard(nodeData) {
             </h3>
             
             ${nodeData.k8sNode ? `
-            <div style="margin-bottom: 20px; padding: 15px; background: #e7f4f9; border-radius: 6px;">
-                <h4 style="margin: 0 0 12px 0; color: #004080; font-size: 14px;">📋 Kubernetes Node Info</h4>
+            <div class="k8s-section">
+                <h4>📋 Kubernetes Node Info</h4>
                 <div class="info-row">
                     <span class="label">Role:</span>
                     <span class="value">${nodeData.k8sNode.role || 'N/A'}</span>
@@ -1027,8 +1027,8 @@ function renderMergedNodeCard(nodeData) {
             ` : ''}
             
             ${nodeData.bmhNode ? `
-            <div style="padding: 15px; background: #fff4e5; border-radius: 6px;">
-                <h4 style="margin: 0 0 12px 0; color: #8b4513; font-size: 14px;">🔧 Hardware Info (BareMetalHost)</h4>
+            <div class="hardware-section">
+                <h4>🔧 Hardware Info (BareMetalHost)</h4>
                 <div class="info-row">
                     <span class="label">CPU:</span>
                     <span class="value"><strong>${nodeData.bmhNode.capacity?.cpu || 'N/A'}</strong></span>
@@ -1093,7 +1093,7 @@ function renderNodeCard(node, type) {
                 <span>${node.name.split('.')[0]}</span>
                 <span class="status ${statusClass}">${node.status}</span>
             </h3>
-            <div style="margin-bottom: 12px; padding: 6px 10px; background: #e7f4f9; border-radius: 4px; font-size: 13px; color: #004080; font-weight: 600;">
+            <div class="k8s-section" style="margin-bottom: 12px; padding: 6px 10px; font-size: 13px; font-weight: 600;">
                 ${sourceLabel}
             </div>
                 <div class="info-row">
