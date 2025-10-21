@@ -110,10 +110,12 @@ function renderHubsList(hubs) {
                     <span class="label">Platform:</span>
                     <span class="value">${hub.clusterInfo.platform || 'N/A'}</span>
                 </div>
+                ${hub.clusterInfo.region ? `
                 <div class="info-row">
                     <span class="label">Configuration:</span>
-                    <span class="value"><code style="background: #e7f4f9; padding: 2px 8px; border-radius: 4px; color: #0066cc; font-size: 12px;">${hub.clusterInfo.region || 'N/A'}</code></span>
+                    <span class="value"><code style="background: #e7f4f9; padding: 2px 8px; border-radius: 4px; color: #0066cc; font-size: 12px;">${hub.clusterInfo.region}</code></span>
                 </div>
+                ` : ''}
                 <div class="info-row">
                     <span class="label">Spoke Clusters:</span>
                     <span class="value"><span class="badge">${spokeCount}</span></span>
@@ -122,10 +124,12 @@ function renderHubsList(hubs) {
                     <span class="label">Nodes:</span>
                     <span class="value"><span class="badge">${nodeCount}</span></span>
                 </div>
+                ${policyCount > 0 ? `
                 <div class="info-row">
                     <span class="label">Policies:</span>
                     <span class="value"><span class="badge success">${policyCount}</span></span>
                 </div>
+                ` : ''}
                 ${hub.clusterInfo.consoleURL || hub.clusterInfo.gitopsURL ? `
                 <div class="info-row" style="display: flex; gap: 10px; justify-content: space-between;">
                     ${hub.clusterInfo.consoleURL ? `<a href="${hub.clusterInfo.consoleURL}" target="_blank" class="console-link">🖥️ Console</a>` : '<span></span>'}
@@ -183,26 +187,18 @@ function renderHubsList(hubs) {
                         <span class="label">Kubernetes:</span>
                         <span class="value">${hub.version || 'Unknown'}</span>
                     </div>
-                    <div class="info-row">
-                        <span class="label">Platform:</span>
-                        <span class="value">${hub.clusterInfo.platform || 'External'}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">Configuration:</span>
-                        <span class="value"><code style="background: #e7f4f9; padding: 2px 8px; border-radius: 4px; color: #0066cc; font-size: 12px;">${hub.clusterInfo.region || 'N/A'}</code></span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">Spoke Clusters:</span>
-                        <span class="value"><span class="badge">${spokeCount}</span></span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">Nodes:</span>
-                        <span class="value"><span class="badge">${nodeCount}</span></span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">Policies:</span>
-                        <span class="value"><span class="badge success">${policyCount}</span></span>
-                    </div>
+                <div class="info-row">
+                    <span class="label">Platform:</span>
+                    <span class="value">${hub.clusterInfo.platform || 'External'}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Spoke Clusters:</span>
+                    <span class="value"><span class="badge">${spokeCount}</span></span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Nodes:</span>
+                    <span class="value"><span class="badge">${nodeCount}</span></span>
+                </div>
                     ${hub.clusterInfo.consoleURL || hub.clusterInfo.gitopsURL ? `
                     <div class="info-row" style="display: flex; gap: 10px; justify-content: space-between;">
                         ${hub.clusterInfo.consoleURL ? `<a href="${hub.clusterInfo.consoleURL}" target="_blank" class="console-link">🖥️ Console</a>` : '<span></span>'}
