@@ -449,10 +449,12 @@ async function toggleSpokeDetails(id, hubName, spokeName) {
             
             // Lazy load operators on first expansion
             const operatorsCell = element.querySelector('.lazy-operators');
-            if (operatorsCell && operatorsCell.textContent === 'Loading...') {
+            if (operatorsCell && operatorsCell.textContent.trim().includes('Loading')) {
                 try {
+                    console.log(`Fetching operators for ${spokeName} from hub ${hubName}...`);
                     const response = await fetch(`${API_BASE}/hubs/${hubName}/spokes/${spokeName}/operators`);
                     const data = await response.json();
+                    console.log('Operators response:', data);
                     if (data.success && data.data) {
                         // Update the operators section with fetched data
                         updateSpokeOperators(id, data.data);
@@ -461,7 +463,7 @@ async function toggleSpokeDetails(id, hubName, spokeName) {
                     }
                 } catch (error) {
                     console.error('Error loading spoke operators:', error);
-                    operatorsCell.textContent = 'Error';
+                    operatorsCell.textContent = 'Error: ' + error.message;
                 }
             }
         } else {
