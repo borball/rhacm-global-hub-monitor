@@ -462,5 +462,52 @@ a:hover {
 }
 
 .policy-detail-row {
-    background: #fafafa;
+    background: var(--bg-tertiary) !important;
+}
+
+.policy-detail-row td {
+    background: var(--bg-tertiary) !important;
+}
+
+/* Summary cards in policy details */
+.policy-summary-card {
+    padding: 15px;
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.policy-summary-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+.policy-summary-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Hardware grid cards */
+.hardware-grid-item {
+    padding: 10px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+}
+
+/* Code blocks */
+.code-block {
+    background: var(--bg-tertiary);
+    padding: 15px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text-primary);
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
 }

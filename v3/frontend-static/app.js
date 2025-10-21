@@ -1279,7 +1279,7 @@ function renderPolicies(policies) {
                 </td>
             </tr>
             <tr id="${policyId}" class="policy-detail-row" style="display: none;">
-                <td colspan="5" style="background: #f9f9f9; padding: 20px;">
+                <td colspan="5" style="padding: 20px;">
                     ${renderPolicyDetails(policy)}
                 </td>
             </tr>
@@ -1312,21 +1312,21 @@ function renderPolicyDetails(policy) {
         <div>
             <!-- Policy Info Summary Card -->
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
-                <div style="padding: 15px; background: white; border-radius: 6px; border: 1px solid #d2d2d2;">
-                    <div style="font-size: 11px; color: #6a6e73; text-transform: uppercase; margin-bottom: 5px;">Namespace</div>
-                    <div style="font-size: 16px; font-weight: 600;">${policy.namespace}</div>
+                <div class="policy-summary-card">
+                    <div class="policy-summary-label">Namespace</div>
+                    <div class="policy-summary-value">${policy.namespace}</div>
                 </div>
-                <div style="padding: 15px; background: white; border-radius: 6px; border: 1px solid #d2d2d2;">
-                    <div style="font-size: 11px; color: #6a6e73; text-transform: uppercase; margin-bottom: 5px;">Compliance</div>
+                <div class="policy-summary-card">
+                    <div class="policy-summary-label">Compliance</div>
                     <div><span class="policy-badge ${policy.complianceState?.toLowerCase() === 'compliant' ? 'policy-compliant' : 'policy-noncompliant'}">${policy.complianceState || 'Unknown'}</span></div>
                 </div>
-                <div style="padding: 15px; background: white; border-radius: 6px; border: 1px solid #d2d2d2;">
-                    <div style="font-size: 11px; color: #6a6e73; text-transform: uppercase; margin-bottom: 5px;">Remediation</div>
+                <div class="policy-summary-card">
+                    <div class="policy-summary-label">Remediation</div>
                     <div><span class="policy-badge ${policy.remediationAction === 'enforce' ? 'policy-enforce' : 'policy-inform'}">${policy.remediationAction || 'N/A'}</span></div>
                 </div>
-                <div style="padding: 15px; background: white; border-radius: 6px; border: 1px solid #d2d2d2;">
-                    <div style="font-size: 11px; color: #6a6e73; text-transform: uppercase; margin-bottom: 5px;">Violations</div>
-                    <div style="font-size: 24px; font-weight: 700; color: ${policy.violations > 0 ? '#c9190b' : '#3e8635'};">${policy.violations || 0}</div>
+                <div class="policy-summary-card">
+                    <div class="policy-summary-label">Violations</div>
+                    <div style="font-size: 24px; font-weight: 700; color: ${policy.violations > 0 ? 'var(--status-notready-text)' : 'var(--badge-green-text)'};">${policy.violations || 0}</div>
                 </div>
             </div>
             
@@ -1340,7 +1340,7 @@ function renderPolicyDetails(policy) {
                 <div style="font-size: 13px; color: #6a6e73; margin-bottom: 10px;">
                     🕐 ${policy.annotations['latest-status-timestamp'] ? new Date(policy.annotations['latest-status-timestamp']).toLocaleString() : 'Recent'}
                 </div>
-                <div style="font-size: 14px; line-height: 1.8; font-family: 'Courier New', monospace; background: white; padding: 15px; border-radius: 4px; max-height: 200px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;">
+                <div class="code-block">
 ${policy.annotations['latest-status-message']}
                 </div>
             </div>
