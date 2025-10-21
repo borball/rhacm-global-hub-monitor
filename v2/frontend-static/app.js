@@ -126,14 +126,10 @@ function renderHubsList(hubs) {
                     <span class="label">Policies:</span>
                     <span class="value"><span class="badge success">${policyCount}</span></span>
                 </div>
-                ${hub.clusterInfo.consoleURL ? `
-                <div class="info-row">
-                    <a href="${hub.clusterInfo.consoleURL}" target="_blank" class="console-link">🖥️ Open Console</a>
-                </div>
-                ` : ''}
-                ${hub.clusterInfo.gitopsURL ? `
-                <div class="info-row">
-                    <a href="${hub.clusterInfo.gitopsURL}" target="_blank" class="console-link">🔄 GitOps Console</a>
+                ${hub.clusterInfo.consoleURL || hub.clusterInfo.gitopsURL ? `
+                <div class="info-row" style="display: flex; gap: 10px; justify-content: space-between;">
+                    ${hub.clusterInfo.consoleURL ? `<a href="${hub.clusterInfo.consoleURL}" target="_blank" class="console-link">🖥️ Console</a>` : '<span></span>'}
+                    ${hub.clusterInfo.gitopsURL ? `<a href="${hub.clusterInfo.gitopsURL}" target="_blank" class="console-link">🔄 GitOps</a>` : '<span></span>'}
                 </div>
                 ` : ''}
                 <button class="btn btn-primary" onclick="showHubDetails('${hub.name}')" style="width: 100%; margin-top: 12px;">
@@ -207,14 +203,10 @@ function renderHubsList(hubs) {
                         <span class="label">Policies:</span>
                         <span class="value"><span class="badge success">${policyCount}</span></span>
                     </div>
-                    ${hub.clusterInfo.consoleURL ? `
-                    <div class="info-row">
-                        <a href="${hub.clusterInfo.consoleURL}" target="_blank" class="console-link">🖥️ Open Console</a>
-                    </div>
-                    ` : ''}
-                    ${hub.clusterInfo.gitopsURL ? `
-                    <div class="info-row">
-                        <a href="${hub.clusterInfo.gitopsURL}" target="_blank" class="console-link">🔄 GitOps Console</a>
+                    ${hub.clusterInfo.consoleURL || hub.clusterInfo.gitopsURL ? `
+                    <div class="info-row" style="display: flex; gap: 10px; justify-content: space-between;">
+                        ${hub.clusterInfo.consoleURL ? `<a href="${hub.clusterInfo.consoleURL}" target="_blank" class="console-link">🖥️ Console</a>` : '<span></span>'}
+                        ${hub.clusterInfo.gitopsURL ? `<a href="${hub.clusterInfo.gitopsURL}" target="_blank" class="console-link">🔄 GitOps</a>` : '<span></span>'}
                     </div>
                     ` : ''}
                     <button class="btn btn-primary" onclick="showHubDetails('${hub.name}')" style="width: 100%; margin-top: 12px;">
