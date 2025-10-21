@@ -410,6 +410,14 @@ func (r *RHACMClient) getSpokesClustersFromHub(ctx context.Context, hubName stri
 		}
 		mc.NodesInfo = spokeNodes
 
+		// Fetch operators for this spoke from the hub in the spoke's namespace
+		spokeOperators, err := hubClient.kubeClient.GetOperatorsForNamespace(ctx, cluster.Name)
+		if err != nil {
+			fmt.Printf("Warning: Could not fetch operators for spoke %s: %v\n", cluster.Name, err)
+			spokeOperators = []models.OperatorInfo{}
+		}
+		mc.OperatorsInfo = spokeOperators
+
 		spokes = append(spokes, *mc)
 	}
 
