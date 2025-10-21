@@ -1367,19 +1367,14 @@ ${policy.annotations['latest-status-message']}
                 ${Object.keys(policy.labels || {}).length > 0 ? `
                 <div>
                     <strong style="color: var(--text-link); font-size: 12px; display: block; margin-bottom: 6px;">🏷️ Labels (${Object.keys(policy.labels).length})</strong>
-                    <div class="code-block" style="font-size: 10px; max-height: 85px; padding: 6px;">
-                        ${Object.entries(policy.labels).map(([key, value]) => `${key}: ${value}`).join('<br>')}
-                    </div>
+                    <div class="code-block" style="font-size: 10px; max-height: 85px; padding: 6px 6px 6px 6px;">${Object.entries(policy.labels).map(([key, value]) => `${key}: ${value}`).join('<br>')}</div>
                 </div>
                 ` : ''}
                 
                 ${Object.keys(policy.annotations || {}).length > 0 ? `
                 <div style="margin-top: ${Object.keys(policy.labels || {}).length > 0 ? '8px' : '0'};">
                     <strong style="color: var(--text-link); font-size: 12px; display: block; margin-bottom: 6px;">📝 Annotations (${Object.keys(policy.annotations).length})</strong>
-                    <div class="code-block" style="font-size: 9px; max-height: 70px; padding: 6px;">
-                        ${Object.entries(policy.annotations).slice(0, 3).map(([key, value]) => `${key}: ${value.substring(0, 35)}${value.length > 35 ? '...' : ''}`).join('<br>')}
-                        ${Object.keys(policy.annotations).length > 3 ? '<br>... +' + (Object.keys(policy.annotations).length - 3) + ' more' : ''}
-                    </div>
+                    <div class="code-block" style="font-size: 9px; max-height: 70px; padding: 6px 6px 6px 6px;">${Object.entries(policy.annotations).slice(0, 3).map(([key, value]) => `${key}: ${value.substring(0, 35)}${value.length > 35 ? '...' : ''}`).join('<br>')}${Object.keys(policy.annotations).length > 3 ? '<br>... +' + (Object.keys(policy.annotations).length - 3) + ' more' : ''}</div>
                 </div>
                 ` : ''}
             </div>
