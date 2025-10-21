@@ -383,15 +383,17 @@ tr:hover {
     gap: 10px;
     margin-bottom: 15px;
     padding: 15px;
-    background: white;
+    background: var(--bg-secondary);
     border-radius: 8px;
-    border: 1px solid #d2d2d2;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
 }
 
 .hardware-item {
     padding: 8px;
-    background: #f9f9f9;
+    background: var(--bg-tertiary);
     border-radius: 4px;
+    transition: background-color 0.3s ease;
 }
 
 .hardware-label {
@@ -458,7 +460,15 @@ a:hover {
 }
 
 .policy-row:hover {
-    background: #f0f0f0;
+    background: var(--bg-accent);
+}
+
+.spoke-detail-row {
+    background: var(--bg-tertiary) !important;
+}
+
+.spoke-detail-row td {
+    background: var(--bg-tertiary) !important;
 }
 
 .policy-detail-row {

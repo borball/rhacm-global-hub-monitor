@@ -470,7 +470,7 @@ function renderSpokeDetails(spoke, hubName) {
             
             ${(spoke.nodesInfo && spoke.nodesInfo.length > 0) ? `
             <div style="margin-bottom: 15px;">
-                <h4 style="color: #0066cc; margin-bottom: 10px; font-size: 15px;">💻 Hardware Inventory</h4>
+                <h4 style="color: var(--text-link); margin-bottom: 10px; font-size: 15px;">💻 Hardware Inventory</h4>
                 ${renderSpokeHardwareCompact(spoke.nodesInfo)}
             </div>
             ` : ''}
@@ -478,7 +478,7 @@ function renderSpokeDetails(spoke, hubName) {
             ${policyCount > 0 ? `
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <h4 style="color: #0066cc; margin: 0; font-size: 15px;">📋 Policies (${policyCount} total, ${compliantPolicies} compliant)</h4>
+                    <h4 style="color: var(--text-link); margin: 0; font-size: 15px;">📋 Policies (${policyCount} total, ${compliantPolicies} compliant)</h4>
                 </div>
                 
                 <div class="policy-summary-card" style="margin-bottom: 15px;">
@@ -1349,7 +1349,7 @@ ${policy.annotations['latest-status-message']}
             <!-- Two Column Layout for Metadata -->
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
                 <div>
-                    <h4 style="color: #0066cc; margin-bottom: 12px;">Additional Information</h4>
+                    <h4 style="color: var(--text-link); margin-bottom: 12px;">Additional Information</h4>
                     <div class="info-row">
                         <span class="label">Full Name:</span>
                         <span class="value"><code style="font-size: 11px; word-break: break-all;">${policy.name}</code></span>
@@ -1370,8 +1370,8 @@ ${policy.annotations['latest-status-message']}
                 <div>
                 ${Object.keys(policy.labels || {}).length > 0 ? `
                 <div style="margin-top: 20px;">
-                    <h4 style="color: #0066cc; margin-bottom: 12px;">Labels</h4>
-                    <div style="max-height: 150px; overflow-y: auto; font-size: 12px; font-family: monospace; background: #f5f5f5; padding: 10px; border-radius: 4px;">
+                    <h4 style="color: var(--text-link); margin-bottom: 12px;">Labels</h4>
+                    <div class="code-block" style="font-size: 12px;">
                         ${Object.entries(policy.labels).map(([key, value]) => `${key}: ${value}`).join('<br>')}
                     </div>
                 </div>
@@ -1379,8 +1379,8 @@ ${policy.annotations['latest-status-message']}
                 
                 ${Object.keys(policy.annotations || {}).length > 0 ? `
                 <div style="margin-top: 15px;">
-                    <h4 style="color: #0066cc; margin-bottom: 12px;">Annotations</h4>
-                    <div style="max-height: 150px; overflow-y: auto; font-size: 11px; font-family: monospace; background: #f5f5f5; padding: 10px; border-radius: 4px;">
+                    <h4 style="color: var(--text-link); margin-bottom: 12px;">Annotations</h4>
+                    <div class="code-block" style="font-size: 11px;">
                         ${Object.entries(policy.annotations).slice(0, 5).map(([key, value]) => `${key}: ${value.substring(0, 50)}${value.length > 50 ? '...' : ''}`).join('<br>')}
                         ${Object.keys(policy.annotations).length > 5 ? '<br>... and ' + (Object.keys(policy.annotations).length - 5) + ' more' : ''}
                     </div>
