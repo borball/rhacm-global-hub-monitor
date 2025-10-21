@@ -444,27 +444,27 @@ function renderSpokeDetails(spoke, hubName) {
             <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 15px;">
                 <div class="spoke-stat-card">
                     <div class="spoke-stat-label">Type</div>
-                    <div style="font-size: 13px; font-weight: 600;">SNO</div>
+                    <div class="spoke-stat-value">SNO</div>
                 </div>
-                <div style="padding: 10px; background: white; border-radius: 4px; border: 1px solid #d2d2d2;">
-                    <div style="font-size: 10px; color: #6a6e73; text-transform: uppercase;">OpenShift</div>
-                    <div style="font-size: 13px; font-weight: 600;">${spoke.clusterInfo.openshiftVersion || 'N/A'}</div>
+                <div class="spoke-stat-card">
+                    <div class="spoke-stat-label">OpenShift</div>
+                    <div class="spoke-stat-value">${spoke.clusterInfo.openshiftVersion || 'N/A'}</div>
                 </div>
-                <div style="padding: 10px; background: white; border-radius: 4px; border: 1px solid #d2d2d2;">
-                    <div style="font-size: 10px; color: #6a6e73; text-transform: uppercase;">Kubernetes</div>
-                    <div style="font-size: 13px; font-weight: 600;">${spoke.version || 'N/A'}</div>
+                <div class="spoke-stat-card">
+                    <div class="spoke-stat-label">Kubernetes</div>
+                    <div class="spoke-stat-value">${spoke.version || 'N/A'}</div>
                 </div>
-                <div style="padding: 10px; background: white; border-radius: 4px; border: 1px solid #d2d2d2;">
-                    <div style="font-size: 10px; color: #6a6e73; text-transform: uppercase;">Platform</div>
-                    <div style="font-size: 13px; font-weight: 600;">${spoke.clusterInfo.platform || 'N/A'}</div>
+                <div class="spoke-stat-card">
+                    <div class="spoke-stat-label">Platform</div>
+                    <div class="spoke-stat-value">${spoke.clusterInfo.platform || 'N/A'}</div>
                 </div>
                 <div class="spoke-stat-card">
                     <div class="spoke-stat-label">Config</div>
                     <div class="spoke-stat-value">${spoke.clusterInfo.region || 'N/A'}</div>
                 </div>
-                <div style="padding: 10px; background: #e7f1e7; border-radius: 4px; border: 1px solid #3e8635;">
-                    <div style="font-size: 10px; color: #3e8635; text-transform: uppercase;">Policies</div>
-                    <div style="font-size: 20px; font-weight: 700; color: #3e8635;">${compliantPolicies}/${policyCount}</div>
+                <div class="spoke-stat-card" style="background: var(--badge-green-bg); border-color: var(--badge-green-text);">
+                    <div class="spoke-stat-label" style="color: var(--badge-green-text);">Policies</div>
+                    <div style="font-size: 20px; font-weight: 700; color: var(--badge-green-text);">${compliantPolicies}/${policyCount}</div>
                 </div>
             </div>
             
