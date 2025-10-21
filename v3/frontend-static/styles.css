@@ -348,8 +348,9 @@ tbody tr:hover {
 }
 
 a {
-    color: #0066cc;
+    color: var(--text-link);
     text-decoration: none;
+    transition: color 0.3s ease;
 }
 
 a:hover {
