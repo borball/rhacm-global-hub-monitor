@@ -279,7 +279,7 @@ function renderHubDetails(hub) {
     const uniqueOperatorCount = uniqueOperatorNames.size;
     
     let html = `
-        <button class="back-button" onclick="fetchHubs()">← Back to Hubs</button>
+        <button class="back-button" onclick="returnToHomepage()">← Back to Hubs</button>
         
         <h2 class="section-title">
             ${hub.name}
@@ -1577,7 +1577,7 @@ function switchTab(index, hubName) {
 function showAddHubForm() {
     const app = document.getElementById('app');
     app.innerHTML = `
-        <button class="back-button" onclick="fetchHubs()">← Back to Hubs</button>
+        <button class="back-button" onclick="returnToHomepage()">← Back to Hubs</button>
         
         <h2 class="section-title">Add New Hub</h2>
         
@@ -1758,6 +1758,18 @@ async function submitAddHub(event) {
         }
     } catch (error) {
         alert('❌ Error adding hub: ' + error.message);
+    }
+}
+
+// Quick return to homepage using cached data
+function returnToHomepage() {
+    if (window.cachedHubsData) {
+        // Use cached data for instant display
+        currentView = 'hubs';
+        renderHubsList(window.cachedHubsData);
+    } else {
+        // No cached data, fetch fresh
+        fetchHubs();
     }
 }
 
