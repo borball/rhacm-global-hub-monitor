@@ -529,14 +529,16 @@ func belongsToHub(cluster clusterv1.ManagedCluster, hubName string) bool {
 func getClusterStatus(cluster *clusterv1.ManagedCluster) string {
 	for _, condition := range cluster.Status.Conditions {
 		if condition.Type == clusterv1.ManagedClusterConditionAvailable {
-			if condition.Status == metav1.ConditionTrue {
+			switch condition.Status {
+			case metav1.ConditionTrue:
 				return "Ready"
-			}
-			if condition.Status == metav1.ConditionFalse {
+			case metav1.ConditionFalse:
 				return "NotReady"
+			case metav1.ConditionUnknown:
+				return "Unknown"
+			default:
+				return "Unknown"
 			}
-			// ConditionUnknown
-			return "Unknown"
 		}
 	}
 	return "Unknown"
