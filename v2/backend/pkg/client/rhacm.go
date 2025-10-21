@@ -335,7 +335,7 @@ func (r *RHACMClient) GetManagedHub(ctx context.Context, name string) (*models.M
 			hub.Status = "Connected"
 			hub.Version = nodes.Items[0].Status.NodeInfo.KubeletVersion
 
-			// Try to get OpenShift version from ClusterVersion resource
+			// Try to get OpenShift version and cluster info from ClusterVersion resource
 			cvGVR := schema.GroupVersionResource{
 				Group:    "config.openshift.io",
 				Version:  "v1",
@@ -355,6 +355,36 @@ func (r *RHACMClient) GetManagedHub(ctx context.Context, name string) (*models.M
 				if spec, found, _ := unstructured.NestedMap(cvList.Items[0].Object, "spec"); found {
 					if clusterID, found, _ := unstructured.NestedString(spec, "clusterID"); found {
 						hub.ClusterInfo.ClusterID = clusterID
+					}
+				}
+			}
+			
+			// Get console and GitOps URLs from routes
+			routeGVR := schema.GroupVersionResource{
+				Group:    "route.openshift.io",
+				Version:  "v1",
+				Resource: "routes",
+			}
+			
+			// Get console URL
+			consoleRoute, err := hubClient.kubeClient.DynamicClient.Resource(routeGVR).Namespace("openshift-console").Get(ctx, "console", metav1.GetOptions{})
+			if err == nil {
+				if spec, found, _ := unstructured.NestedMap(consoleRoute.Object, "spec"); found {
+					if host, found, _ := unstructured.NestedString(spec, "host"); found {
+						hub.ClusterInfo.ConsoleURL = "https://" + host
+					}
+				}
+			}
+			
+			// Get GitOps console URL
+			gitopsRoutes, err := hubClient.kubeClient.DynamicClient.Resource(routeGVR).Namespace("openshift-gitops").List(ctx, metav1.ListOptions{})
+			if err == nil && len(gitopsRoutes.Items) > 0 {
+				for _, route := range gitopsRoutes.Items {
+					if spec, found, _ := unstructured.NestedMap(route.Object, "spec"); found {
+						if host, found, _ := unstructured.NestedString(spec, "host"); found {
+							hub.ClusterInfo.GitOpsURL = "https://" + host
+							break
+						}
 					}
 				}
 			}
