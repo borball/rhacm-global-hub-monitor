@@ -28,7 +28,7 @@ func NewSpokeHandler(rhacmClient *client.RHACMClient, kubeClient *client.KubeCli
 // GetSpokeOperators fetches operators for a specific spoke cluster (lazy load)
 func (h *SpokeHandler) GetSpokeOperators(c *gin.Context) {
 	ctx := context.Background()
-	hubName := c.Param("hub")
+	hubName := c.Param("name") // Use 'name' to match the route parameter
 	spokeName := c.Param("spoke")
 
 	// Try to connect to the hub first
