@@ -16,11 +16,11 @@ type HubHandler struct {
 	cache       *cache.Cache
 }
 
-// NewHubHandler creates a new hub handler with caching
-func NewHubHandler(rhacmClient *client.RHACMClient) *HubHandler {
+// NewHubHandler creates a new hub handler with shared cache
+func NewHubHandler(rhacmClient *client.RHACMClient, sharedCache *cache.Cache) *HubHandler {
 	return &HubHandler{
 		rhacmClient: rhacmClient,
-		cache:       cache.NewCache(30 * time.Minute), // Cache for 30 minutes
+		cache:       sharedCache,
 	}
 }
 
