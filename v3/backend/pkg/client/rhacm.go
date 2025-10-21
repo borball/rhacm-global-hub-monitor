@@ -119,6 +119,12 @@ func (r *RHACMClient) enrichHubWithRemoteData(ctx context.Context, hub *models.M
 		hub.PoliciesInfo = policies
 	}
 
+	// Get operators
+	operators, err := hubClient.kubeClient.GetOperators(ctx)
+	if err == nil {
+		hub.OperatorsInfo = operators
+	}
+
 	return nil
 }
 

@@ -12,6 +12,7 @@ type ManagedHub struct {
 	ClusterInfo     ClusterInfo       `json:"clusterInfo"`
 	NodesInfo       []NodeInfo        `json:"nodesInfo"`
 	PoliciesInfo    []PolicyInfo      `json:"policiesInfo"`
+	OperatorsInfo   []OperatorInfo    `json:"operatorsInfo"`
 	ManagedClusters []ManagedCluster  `json:"managedClusters"`
 	Labels          map[string]string `json:"labels"`
 	Annotations     map[string]string `json:"annotations"`
@@ -20,18 +21,19 @@ type ManagedHub struct {
 
 // ManagedCluster represents a managed spoke cluster (SNO)
 type ManagedCluster struct {
-	Name         string            `json:"name"`
-	Namespace    string            `json:"namespace"`
-	Status       string            `json:"status"`
-	Version      string            `json:"version"`
-	Conditions   []Condition       `json:"conditions"`
-	ClusterInfo  ClusterInfo       `json:"clusterInfo"`
-	NodesInfo    []NodeInfo        `json:"nodesInfo"`
-	PoliciesInfo []PolicyInfo      `json:"policiesInfo"`
-	Labels       map[string]string `json:"labels"`
-	Annotations  map[string]string `json:"annotations"`
-	HubName      string            `json:"hubName"`
-	CreatedAt    time.Time         `json:"createdAt"`
+	Name          string            `json:"name"`
+	Namespace     string            `json:"namespace"`
+	Status        string            `json:"status"`
+	Version       string            `json:"version"`
+	Conditions    []Condition       `json:"conditions"`
+	ClusterInfo   ClusterInfo       `json:"clusterInfo"`
+	NodesInfo     []NodeInfo        `json:"nodesInfo"`
+	PoliciesInfo  []PolicyInfo      `json:"policiesInfo"`
+	OperatorsInfo []OperatorInfo    `json:"operatorsInfo"`
+	Labels        map[string]string `json:"labels"`
+	Annotations   map[string]string `json:"annotations"`
+	HubName       string            `json:"hubName"`
+	CreatedAt     time.Time         `json:"createdAt"`
 }
 
 // ClusterInfo represents basic cluster information
@@ -83,6 +85,17 @@ type PolicyInfo struct {
 	Labels            map[string]string `json:"labels"`
 	Annotations       map[string]string `json:"annotations"`
 	CreatedAt         time.Time         `json:"createdAt"`
+}
+
+// OperatorInfo represents operator information
+type OperatorInfo struct {
+	Name        string    `json:"name"`
+	DisplayName string    `json:"displayName"`
+	Version     string    `json:"version"`
+	Namespace   string    `json:"namespace"`
+	Phase       string    `json:"phase"`
+	Provider    string    `json:"provider"`
+	CreatedAt   time.Time `json:"createdAt"`
 }
 
 // Condition represents a kubernetes condition
