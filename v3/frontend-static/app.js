@@ -444,11 +444,12 @@ function toggleSpokeDetails(id) {
 function renderSpokeDetails(spoke, hubName) {
     const policyCount = spoke.policiesInfo?.length || 0;
     const compliantPolicies = (spoke.policiesInfo || []).filter(p => p.complianceState === 'Compliant').length;
+    const operatorCount = spoke.operatorsInfo?.length || 0;
     
     return `
         <div style="padding: 15px;">
             <!-- Compact Info Grid -->
-            <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 15px;">
+            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; margin-bottom: 15px;">
                 <div class="spoke-stat-card">
                     <div class="spoke-stat-label">Type</div>
                     <div class="spoke-stat-value">SNO</div>
@@ -473,12 +474,45 @@ function renderSpokeDetails(spoke, hubName) {
                     <div class="spoke-stat-label" style="color: var(--badge-green-text);">Policies</div>
                     <div style="font-size: 20px; font-weight: 700; color: var(--badge-green-text);">${compliantPolicies}/${policyCount}</div>
                 </div>
+                <div class="spoke-stat-card" style="background: var(--badge-blue-bg); border-color: var(--badge-blue-text);">
+                    <div class="spoke-stat-label" style="color: var(--badge-blue-text);">Operators</div>
+                    <div style="font-size: 20px; font-weight: 700; color: var(--badge-blue-text);">${operatorCount}</div>
+                </div>
             </div>
             
             ${(spoke.nodesInfo && spoke.nodesInfo.length > 0) ? `
             <div style="margin-bottom: 15px;">
                 <h4 style="color: var(--text-link); margin-bottom: 10px; font-size: 15px;">💻 Hardware Inventory</h4>
                 ${renderSpokeHardwareCompact(spoke.nodesInfo)}
+            </div>
+            ` : ''}
+            
+            ${operatorCount > 0 ? `
+            <div style="margin-bottom: 15px;">
+                <h4 style="color: var(--text-link); margin-bottom: 10px; font-size: 15px;">🔧 Operators (${operatorCount} installed)</h4>
+                <div style="max-height: 200px; overflow-y: auto;">
+                    <table style="width: 100%; font-size: 12px;">
+                        <thead>
+                            <tr>
+                                <th>Operator</th>
+                                <th>Version</th>
+                                <th>Namespace</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${(spoke.operatorsInfo || []).slice(0, 10).map(op => `
+                                <tr>
+                                    <td><strong>${op.displayName || op.name}</strong></td>
+                                    <td><code class="config-badge" style="font-size: 10px;">${op.version || 'N/A'}</code></td>
+                                    <td style="font-size: 11px;">${op.namespace}</td>
+                                    <td><span class="status ${op.phase === 'Succeeded' ? 'ready' : 'notready'}" style="font-size: 10px; padding: 2px 8px;">${op.phase || 'Unknown'}</span></td>
+                                </tr>
+                            `).join('')}
+                            ${operatorCount > 10 ? `<tr><td colspan="4" style="text-align: center; color: var(--text-secondary); font-size: 11px; padding: 8px;">... and ${operatorCount - 10} more operators</td></tr>` : ''}
+                        </tbody>
+                    </table>
+                </div>
             </div>
             ` : ''}
             
