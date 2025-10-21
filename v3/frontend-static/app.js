@@ -1684,23 +1684,45 @@ function renderOperators(operators) {
         return '<div class="empty-state"><div class="empty-state-icon">🔧</div><p>No operators found</p></div>';
     }
     
+    // Group operators by display name
+    const operatorMap = new Map();
+    operators.forEach(op => {
+        const key = op.displayName || op.name;
+        if (!operatorMap.has(key)) {
+            operatorMap.set(key, {
+                displayName: op.displayName || op.name,
+                name: op.name,
+                version: op.version,
+                namespaces: [],
+                phase: op.phase,
+                provider: op.provider,
+                createdAt: op.createdAt
+            });
+        }
+        operatorMap.get(key).namespaces.push(op.namespace);
+    });
+    
+    const uniqueOperators = Array.from(operatorMap.values());
+    
     let html = `
         <div class="card" style="margin-bottom: 20px; padding: 20px;">
-            <div style="display: flex; gap: 15px; align-items: center;">
-                <div style="flex: 1;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: 600; color: var(--text-secondary);">🔍 Search Operator</label>
-                    <input type="text" id="search-operator-name" placeholder="Enter operator name..." 
-                           style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; background: var(--bg-secondary); color: var(--text-primary);"
-                           onkeyup="filterOperators()">
+            <div style="display: flex; gap: 15px; align-items: center; justify-content: space-between;">
+                <div style="color: var(--text-secondary); font-size: 14px;">
+                    ${uniqueOperators.length} unique operator${uniqueOperators.length !== 1 ? 's' : ''} (${operators.length} total installations)
                 </div>
-                <div style="padding-top: 28px;">
-                    <button class="btn btn-secondary" onclick="clearOperatorSearch()" style="padding: 10px 20px;">
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <div>
+                        <input type="text" id="search-operator-name" placeholder="🔍 Search operator..." 
+                               style="padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 13px; background: var(--bg-secondary); color: var(--text-primary);"
+                               onkeyup="filterOperators()">
+                    </div>
+                    <button class="btn btn-secondary" onclick="clearOperatorSearch()" style="padding: 8px 16px;">
                         ✕ Clear
                     </button>
                 </div>
             </div>
-            <div id="operator-count" style="margin-top: 15px; color: var(--text-secondary); font-size: 14px;">
-                Showing ${operators.length} operator${operators.length !== 1 ? 's' : ''}
+            <div id="operator-count" style="margin-top: 10px; color: var(--text-secondary); font-size: 13px;">
+                Showing ${uniqueOperators.length} operator${uniqueOperators.length !== 1 ? 's' : ''}
             </div>
         </div>
         
@@ -1710,29 +1732,32 @@ function renderOperators(operators) {
                     <tr>
                         <th>Operator Name</th>
                         <th>Version</th>
-                        <th>Namespace</th>
+                        <th>Namespaces</th>
                         <th>Status</th>
                         <th>Provider</th>
-                        <th>Created</th>
                     </tr>
                 </thead>
                 <tbody>
     `;
     
-    operators.forEach((operator) => {
+    uniqueOperators.forEach((operator) => {
         const phaseClass = operator.phase === 'Succeeded' ? 'ready' : 'notready';
+        const namespaceCount = operator.namespaces.length;
+        const namespaceDisplay = namespaceCount === 1 ? operator.namespaces[0] : `${namespaceCount} namespaces`;
         
         html += `
-            <tr class="operator-row" data-operator-name="${(operator.displayName || operator.name).toLowerCase()}">
+            <tr class="operator-row" data-operator-name="${operator.displayName.toLowerCase()}">
                 <td>
-                    <strong>${operator.displayName || operator.name}</strong>
-                    ${operator.displayName && operator.name !== operator.displayName ? `<br><small style="color: var(--text-secondary); font-size: 11px;">${operator.name}</small>` : ''}
+                    <strong>${operator.displayName}</strong>
+                    ${operator.displayName !== operator.name ? `<br><small style="color: var(--text-secondary); font-size: 11px;">${operator.name}</small>` : ''}
                 </td>
                 <td><code class="config-badge">${operator.version || 'N/A'}</code></td>
-                <td>${operator.namespace}</td>
+                <td>
+                    ${namespaceCount === 1 ? operator.namespaces[0] : `<span class="badge">${namespaceCount} ns</span>`}
+                    ${namespaceCount > 1 ? `<br><small style="color: var(--text-secondary); font-size: 10px;">${operator.namespaces.slice(0, 3).join(', ')}${namespaceCount > 3 ? `, +${namespaceCount - 3} more` : ''}</small>` : ''}
+                </td>
                 <td><span class="status ${phaseClass}">${operator.phase || 'Unknown'}</span></td>
                 <td>${operator.provider || 'N/A'}</td>
-                <td style="font-size: 12px;">${new Date(operator.createdAt).toLocaleDateString()}</td>
             </tr>
         `;
     });
