@@ -884,22 +884,11 @@ function renderSpokeHardware(nodes) {
                     <span class="hardware-label">🌐 IP:</span>
                     ${node.internalIP || 'N/A'}
                 </div>
-                ${node.annotations?.['bmc-address'] ? `
-                <div class="hardware-item" style="grid-column: 1 / -1;">
-                    <span class="hardware-label">🔧 BMC:</span>
-                    <small style="font-family: monospace; font-size: 11px;">${node.annotations['bmc-address']}</small>
-                </div>
-                ` : ''}
-                ${node.annotations?.manufacturer ? `
-                <div class="hardware-item">
-                    <span class="hardware-label">🏭 Vendor:</span>
-                    ${node.annotations.manufacturer}
-                </div>
-                ` : ''}
-                ${node.annotations?.['serial-number'] ? `
-                <div class="hardware-item">
-                    <span class="hardware-label">📋 S/N:</span>
-                    <small style="font-family: monospace;">${node.annotations['serial-number']}</small>
+                ${node.annotations?.['bmc-address'] || node.annotations?.manufacturer || node.annotations?.['serial-number'] ? `
+                <div class="hardware-item" style="grid-column: 1 / -1; display: flex; gap: 15px; flex-wrap: wrap; font-size: 13px;">
+                    ${node.annotations?.['bmc-address'] ? `<span><span class="hardware-label">🔧 BMC:</span> <small style="font-family: monospace; font-size: 11px;">${node.annotations['bmc-address']}</small></span>` : ''}
+                    ${node.annotations?.manufacturer ? `<span><span class="hardware-label">🏭 Vendor:</span> ${node.annotations.manufacturer}</span>` : ''}
+                    ${node.annotations?.['serial-number'] ? `<span><span class="hardware-label">📋 S/N:</span> <small style="font-family: monospace;">${node.annotations['serial-number']}</small></span>` : ''}
                 </div>
                 ` : ''}
             </div>
