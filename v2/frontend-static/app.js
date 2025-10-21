@@ -312,10 +312,12 @@ function renderHubOverview(hub) {
             <div class="info-row"><span class="label">Kubernetes Version:</span> <span class="value">${hub.version || 'N/A'}</span></div>
             <div class="info-row"><span class="label">OpenShift Version:</span> <span class="value">${hub.clusterInfo.openshiftVersion || 'N/A'}</span></div>
             <div class="info-row"><span class="label">Platform:</span> <span class="value">${hub.clusterInfo.platform || 'N/A'}</span></div>
+            ${hub.clusterInfo.region ? `
             <div class="info-row">
                 <span class="label">Configuration Version:</span>
-                <span class="value"><strong style="color: #0066cc; background: #e7f4f9; padding: 4px 12px; border-radius: 4px; font-size: 14px;">${hub.clusterInfo.region || 'N/A'}</strong></span>
+                <span class="value"><strong style="color: #0066cc; background: #e7f4f9; padding: 4px 12px; border-radius: 4px; font-size: 14px;">${hub.clusterInfo.region}</strong></span>
             </div>
+            ` : ''}
             <div class="info-row"><span class="label">Cluster ID:</span> <span class="value"><small style="font-family: monospace;">${hub.clusterInfo.clusterID}</small></span></div>
             ${hub.clusterInfo.consoleURL ? `
             <div class="info-row">
