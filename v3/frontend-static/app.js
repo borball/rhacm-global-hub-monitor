@@ -390,6 +390,7 @@ function renderSpokes(spokes, hubName) {
                         <th>Configuration</th>
                         <th>Platform</th>
                         <th>Nodes</th>
+                        <th>Operators</th>
                         <th>Policies</th>
                         <th>Actions</th>
                     </tr>
@@ -404,6 +405,13 @@ function renderSpokes(spokes, hubName) {
         const compliantPolicies = (spoke.policiesInfo || []).filter(p => p.complianceState === 'Compliant').length;
         const spokeDetailId = `spoke-detail-${spokeIndex}`;
         
+        // Calculate unique operator count
+        const uniqueOperatorNames = new Set();
+        (spoke.operatorsInfo || []).forEach(op => {
+            uniqueOperatorNames.add(op.displayName || op.name);
+        });
+        const uniqueOperatorCount = uniqueOperatorNames.size;
+        
         html += `
             <tr class="spoke-row" data-cluster-name="${spoke.name.toLowerCase()}" data-version="${(spoke.clusterInfo.openshiftVersion || '').toLowerCase()}" data-configuration="${(spoke.clusterInfo.region || '').toLowerCase()}">
                 <td><strong>${spoke.name}</strong></td>
@@ -412,6 +420,7 @@ function renderSpokes(spokes, hubName) {
                 <td><code class="config-badge">${spoke.clusterInfo.region || 'N/A'}</code></td>
                 <td>${spoke.clusterInfo.platform || 'N/A'}</td>
                 <td><span class="badge">${nodeCount}</span></td>
+                <td><span class="badge" style="background: var(--badge-blue-bg); color: var(--badge-blue-text);">${uniqueOperatorCount}</span></td>
                 <td><span class="badge ${compliantPolicies === policyCount ? 'success' : 'warning'}">${compliantPolicies}/${policyCount}</span></td>
                 <td>
                     <button class="btn btn-primary" style="padding: 6px 16px; font-size: 13px;" onclick="toggleSpokeDetails('${spokeDetailId}')">
