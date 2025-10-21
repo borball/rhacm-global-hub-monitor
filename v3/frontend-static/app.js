@@ -259,6 +259,13 @@ function renderHubDetails(hub) {
     });
     const nodeCount = uniqueHostnames.size;
     
+    // Calculate unique operator count (grouped by displayName)
+    const uniqueOperatorNames = new Set();
+    (hub.operatorsInfo || []).forEach(op => {
+        uniqueOperatorNames.add(op.displayName || op.name);
+    });
+    const uniqueOperatorCount = uniqueOperatorNames.size;
+    
     let html = `
         <button class="back-button" onclick="fetchHubs()">← Back to Hubs</button>
         
@@ -271,7 +278,7 @@ function renderHubDetails(hub) {
             <button class="tab active" onclick="switchTab(0, '${hub.name}')">Overview</button>
             <button class="tab" onclick="switchTab(1, '${hub.name}')">Nodes (${nodeCount})</button>
             ${(hub.annotations?.source !== 'manual' || policyCount > 0) ? `<button class="tab" onclick="switchTab(2, '${hub.name}')">Policies (${policyCount})</button>` : ''}
-            <button class="tab" onclick="switchTab(${hub.annotations?.source === 'manual' && policyCount === 0 ? 2 : 3}, '${hub.name}')">Operators (${hub.operatorsInfo?.length || 0})</button>
+            <button class="tab" onclick="switchTab(${hub.annotations?.source === 'manual' && policyCount === 0 ? 2 : 3}, '${hub.name}')">Operators (${uniqueOperatorCount})</button>
             <button class="tab" onclick="switchTab(${hub.annotations?.source === 'manual' && policyCount === 0 ? 3 : 4}, '${hub.name}')">Spoke Clusters (${spokeCount})</button>
         </div>
         
