@@ -185,23 +185,6 @@ func (r *RHACMClient) GetManagedHubs(ctx context.Context) ([]models.ManagedHub, 
 		// Fetch both K8s Nodes and BareMetalHost for this hub
 		var hubNodes []models.NodeInfo
 
-		// Try to connect to hub and get actual K8s nodes
-		hubClient, err := NewHubClientFromSecret(ctx, r.kubeClient, cluster.Name)
-		if err == nil {
-			// Get K8s Node resources from the hub
-			k8sNodes, err := hubClient.kubeClient.GetNodes(ctx)
-			if err == nil {
-				for i := range k8sNodes.Items {
-					nodeInfo := ConvertNodeToNodeInfo(&k8sNodes.Items[i])
-					if nodeInfo.Annotations == nil {
-						nodeInfo.Annotations = make(map[string]string)
-					}
-					nodeInfo.Annotations["data-source"] = "Node"
-					hubNodes = append(hubNodes, nodeInfo)
-				}
-			}
-		}
-
 		// Also get BareMetalHost resources from hub namespace on global hub
 		bmhNodes, err := r.kubeClient.GetBareMetalHostsForNamespace(ctx, cluster.Name)
 		if err == nil {
@@ -222,6 +205,13 @@ func (r *RHACMClient) GetManagedHubs(ctx context.Context) ([]models.ManagedHub, 
 			Annotations:     cluster.Annotations,
 			CreatedAt:       cluster.CreationTimestamp.Time,
 		}
+		
+		// Enrich with remote data (ClusterVersion, routes, nodes, etc.)
+		hubClient, err := NewHubClientFromSecret(ctx, r.kubeClient, cluster.Name)
+		if err == nil {
+			r.enrichHubWithRemoteData(ctx, hub, hubClient)
+		}
+		
 		hubs = append(hubs, *hub)
 	}
 
@@ -291,92 +281,11 @@ func (r *RHACMClient) discoverUnmanagedHubs(ctx context.Context, existingHubs ma
 			ManagedClusters: nil,
 		}
 
-		// Try to connect and get complete information like managed hubs
+		// Try to connect and get complete information
 		hubClient, err := NewHubClientFromSecret(ctx, r.kubeClient, nsName)
 		if err == nil {
-			// Get cluster information from ClusterVersion resource
-			cvGVR := schema.GroupVersionResource{
-				Group:    "config.openshift.io",
-				Version:  "v1",
-				Resource: "clusterversions",
-			}
-			cvList, err := hubClient.kubeClient.DynamicClient.Resource(cvGVR).List(ctx, metav1.ListOptions{})
-			if err == nil && len(cvList.Items) > 0 {
-				// Get OpenShift version
-				if status, found, _ := unstructured.NestedMap(cvList.Items[0].Object, "status"); found {
-					if desired, found, _ := unstructured.NestedMap(status, "desired"); found {
-						if version, found, _ := unstructured.NestedString(desired, "version"); found {
-							hub.ClusterInfo.OpenshiftVersion = version
-						}
-					}
-				}
-				// Get cluster ID
-				if spec, found, _ := unstructured.NestedMap(cvList.Items[0].Object, "spec"); found {
-					if clusterID, found, _ := unstructured.NestedString(spec, "clusterID"); found {
-						hub.ClusterInfo.ClusterID = clusterID
-					}
-				}
-			}
-
-			// Get console and GitOps URLs from routes
-			routeGVR := schema.GroupVersionResource{
-				Group:    "route.openshift.io",
-				Version:  "v1",
-				Resource: "routes",
-			}
-			
-			// Get console URL
-			route, err := hubClient.kubeClient.DynamicClient.Resource(routeGVR).Namespace("openshift-console").Get(ctx, "console", metav1.GetOptions{})
-			if err == nil {
-				if spec, found, _ := unstructured.NestedMap(route.Object, "spec"); found {
-					if host, found, _ := unstructured.NestedString(spec, "host"); found {
-						hub.ClusterInfo.ConsoleURL = "https://" + host
-					}
-				}
-			}
-			
-			// Get GitOps console URL
-			gitopsRoutes, err := hubClient.kubeClient.DynamicClient.Resource(routeGVR).Namespace("openshift-gitops").List(ctx, metav1.ListOptions{})
-			if err == nil && len(gitopsRoutes.Items) > 0 {
-				for _, route := range gitopsRoutes.Items {
-					if spec, found, _ := unstructured.NestedMap(route.Object, "spec"); found {
-						if host, found, _ := unstructured.NestedString(spec, "host"); found {
-							hub.ClusterInfo.GitOpsURL = "https://" + host
-							break
-						}
-					}
-				}
-			}
-
-			// Get nodes and version info
-			nodes, err := hubClient.kubeClient.GetNodes(ctx)
-			if err == nil && len(nodes.Items) > 0 {
-				hub.Status = "Connected"
-				hub.Version = nodes.Items[0].Status.NodeInfo.KubeletVersion
-				hub.ClusterInfo.KubernetesVersion = nodes.Items[0].Status.NodeInfo.KubeletVersion
-
-				// Convert all nodes
-				for i := range nodes.Items {
-					nodeInfo := ConvertNodeToNodeInfo(&nodes.Items[i])
-					if nodeInfo.Annotations == nil {
-						nodeInfo.Annotations = make(map[string]string)
-					}
-					nodeInfo.Annotations["data-source"] = "Node"
-					hub.NodesInfo = append(hub.NodesInfo, nodeInfo)
-				}
-			}
-
-			// Get spoke clusters
-			spokes, err := r.getSpokesClustersFromHub(ctx, nsName)
-			if err == nil {
-				hub.ManagedClusters = spokes
-			}
-
-			// Get policies
-			policies, err := hubClient.kubeClient.GetPoliciesForNamespace(ctx, nsName)
-			if err == nil {
-				hub.PoliciesInfo = policies
-			}
+			// Use common enrichment function
+			r.enrichHubWithRemoteData(ctx, &hub, hubClient)
 		}
 
 		unmanagedHubs = append(unmanagedHubs, hub)
