@@ -1279,7 +1279,7 @@ function renderPolicies(policies) {
                 </td>
             </tr>
             <tr id="${policyId}" class="policy-detail-row" style="display: none;">
-                <td colspan="5" style="padding: 20px;">
+                <td colspan="5" style="padding: 12px;">
                     ${renderPolicyDetails(policy)}
                 </td>
             </tr>
@@ -1310,8 +1310,7 @@ function showPolicyDetails(index, policyName) {
 function renderPolicyDetails(policy) {
     return `
         <div>
-            <!-- Compact Policy Info - Single Row -->
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 15px;">
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px;">
                 <div class="policy-summary-card" style="padding: 10px;">
                     <div class="policy-summary-label">Namespace</div>
                     <div style="font-size: 14px; font-weight: 600;">${policy.namespace}</div>
@@ -1331,57 +1330,55 @@ function renderPolicyDetails(policy) {
             </div>
             
             ${policy.annotations?.['latest-status-message'] ? `
-            <!-- Compact Status Message -->
-            <div class="${policy.complianceState?.toLowerCase() === 'compliant' ? 'policy-message-compliant' : 'policy-message-noncompliant'}" style="margin-bottom: 15px; padding: 12px; border-radius: 4px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <strong style="color: ${policy.complianceState?.toLowerCase() === 'compliant' ? 'var(--badge-green-text)' : 'var(--status-notready-text)'}; font-size: 14px;">📋 Status Message</strong>
+            <div class="${policy.complianceState?.toLowerCase() === 'compliant' ? 'policy-message-compliant' : 'policy-message-noncompliant'}" style="margin-bottom: 12px; padding: 10px; border-radius: 4px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <strong style="color: ${policy.complianceState?.toLowerCase() === 'compliant' ? 'var(--badge-green-text)' : 'var(--status-notready-text)'}; font-size: 13px;">📋 Status Message</strong>
                     <small style="color: var(--text-secondary); font-size: 11px;">🕐 ${policy.annotations['latest-status-timestamp'] ? new Date(policy.annotations['latest-status-timestamp']).toLocaleString() : 'Recent'}</small>
                 </div>
-                <div class="code-block" style="max-height: 120px; font-size: 12px; padding: 10px;">
+                <div class="code-block" style="max-height: 100px; font-size: 11px; padding: 8px;">
 ${policy.annotations['latest-status-message']}
                 </div>
             </div>
             ` : ''}
             
-            <!-- Compact Two Column Layout -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                 <div>
-                    <strong style="color: var(--text-link); font-size: 13px; display: block; margin-bottom: 8px;">ℹ️ Additional Info</strong>
-                    <div style="font-size: 12px; line-height: 1.8;">
-                        <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border-color);">
+                    <strong style="color: var(--text-link); font-size: 12px; display: block; margin-bottom: 6px;">ℹ️ Additional Info</strong>
+                    <div style="font-size: 11px; line-height: 1.6;">
+                        <div style="display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid var(--border-color);">
                             <span style="color: var(--text-secondary);">Full Name:</span>
-                            <code style="font-size: 10px; word-break: break-all; max-width: 60%;">${policy.name}</code>
+                            <code style="font-size: 9px; word-break: break-all; max-width: 55%;">${policy.name}</code>
                         </div>
-                        <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border-color);">
+                        <div style="display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid var(--border-color);">
                             <span style="color: var(--text-secondary);">Severity:</span>
                             <span>${policy.severity || 'N/A'}</span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border-color);">
+                        <div style="display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid var(--border-color);">
                             <span style="color: var(--text-secondary);">Disabled:</span>
                             <span>${policy.disabled ? 'Yes' : 'No'}</span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; padding: 4px 0;">
+                        <div style="display: flex; justify-content: space-between; padding: 3px 0;">
                             <span style="color: var(--text-secondary);">Created:</span>
-                            <span style="font-size: 11px;">${new Date(policy.createdAt).toLocaleDateString()}</span>
+                            <span style="font-size: 10px;">${new Date(policy.createdAt).toLocaleDateString()}</span>
                         </div>
                     </div>
                 </div>
                 <div>
                 ${Object.keys(policy.labels || {}).length > 0 ? `
                 <div>
-                    <strong style="color: var(--text-link); font-size: 13px; display: block; margin-bottom: 8px;">🏷️ Labels (${Object.keys(policy.labels).length})</strong>
-                    <div class="code-block" style="font-size: 11px; max-height: 100px; padding: 8px;">
+                    <strong style="color: var(--text-link); font-size: 12px; display: block; margin-bottom: 6px;">🏷️ Labels (${Object.keys(policy.labels).length})</strong>
+                    <div class="code-block" style="font-size: 10px; max-height: 85px; padding: 6px;">
                         ${Object.entries(policy.labels).map(([key, value]) => `${key}: ${value}`).join('<br>')}
                     </div>
                 </div>
                 ` : ''}
                 
                 ${Object.keys(policy.annotations || {}).length > 0 ? `
-                <div style="margin-top: ${Object.keys(policy.labels || {}).length > 0 ? '10px' : '0'};">
-                    <strong style="color: var(--text-link); font-size: 13px; display: block; margin-bottom: 8px;">📝 Annotations (${Object.keys(policy.annotations).length})</strong>
-                    <div class="code-block" style="font-size: 10px; max-height: 80px; padding: 8px;">
-                        ${Object.entries(policy.annotations).slice(0, 3).map(([key, value]) => `${key}: ${value.substring(0, 40)}${value.length > 40 ? '...' : ''}`).join('<br>')}
-                        ${Object.keys(policy.annotations).length > 3 ? '<br>... and ' + (Object.keys(policy.annotations).length - 3) + ' more' : ''}
+                <div style="margin-top: ${Object.keys(policy.labels || {}).length > 0 ? '8px' : '0'};">
+                    <strong style="color: var(--text-link); font-size: 12px; display: block; margin-bottom: 6px;">📝 Annotations (${Object.keys(policy.annotations).length})</strong>
+                    <div class="code-block" style="font-size: 9px; max-height: 70px; padding: 6px;">
+                        ${Object.entries(policy.annotations).slice(0, 3).map(([key, value]) => `${key}: ${value.substring(0, 35)}${value.length > 35 ? '...' : ''}`).join('<br>')}
+                        ${Object.keys(policy.annotations).length > 3 ? '<br>... +' + (Object.keys(policy.annotations).length - 3) + ' more' : ''}
                     </div>
                 </div>
                 ` : ''}
