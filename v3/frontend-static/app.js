@@ -405,12 +405,8 @@ function renderSpokes(spokes, hubName) {
         const compliantPolicies = (spoke.policiesInfo || []).filter(p => p.complianceState === 'Compliant').length;
         const spokeDetailId = `spoke-detail-${spokeIndex}`;
         
-        // Calculate unique operator count
-        const uniqueOperatorNames = new Set();
-        (spoke.operatorsInfo || []).forEach(op => {
-            uniqueOperatorNames.add(op.displayName || op.name);
-        });
-        const uniqueOperatorCount = uniqueOperatorNames.size;
+        // Operators are lazy loaded, don't show count in table
+        const uniqueOperatorCount = '...';
         
         html += `
             <tr class="spoke-row" data-cluster-name="${spoke.name.toLowerCase()}" data-version="${(spoke.clusterInfo.openshiftVersion || '').toLowerCase()}" data-configuration="${(spoke.clusterInfo.region || '').toLowerCase()}">
@@ -420,10 +416,10 @@ function renderSpokes(spokes, hubName) {
                 <td><code class="config-badge">${spoke.clusterInfo.region || 'N/A'}</code></td>
                 <td>${spoke.clusterInfo.platform || 'N/A'}</td>
                 <td><span class="badge">${nodeCount}</span></td>
-                <td><span class="badge" style="background: var(--badge-blue-bg); color: var(--badge-blue-text);">${uniqueOperatorCount}</span></td>
+                <td><span class="badge" style="background: var(--badge-blue-bg); color: var(--badge-blue-text); font-size: 12px;">...</span></td>
                 <td><span class="badge ${compliantPolicies === policyCount ? 'success' : 'warning'}">${compliantPolicies}/${policyCount}</span></td>
                 <td>
-                    <button class="btn btn-primary" style="padding: 6px 16px; font-size: 13px;" onclick="toggleSpokeDetails('${spokeDetailId}')">
+                    <button class="btn btn-primary" style="padding: 6px 16px; font-size: 13px;" onclick="toggleSpokeDetails('${spokeDetailId}', '${hubName}', '${spoke.name}')">
                         📊 Details
                     </button>
                 </td>
@@ -444,15 +440,95 @@ function renderSpokes(spokes, hubName) {
     return html;
 }
 
-// Toggle spoke details visibility
-function toggleSpokeDetails(id) {
+// Toggle spoke details visibility and lazy load operators
+async function toggleSpokeDetails(id, hubName, spokeName) {
     const element = document.getElementById(id);
     if (element) {
         if (element.style.display === 'none') {
             element.style.display = 'table-row';
+            
+            // Lazy load operators on first expansion
+            const operatorsCell = element.querySelector('.lazy-operators');
+            if (operatorsCell && operatorsCell.textContent === 'Loading...') {
+                try {
+                    const response = await fetch(`${API_BASE}/hubs/${hubName}/spokes/${spokeName}/operators`);
+                    const data = await response.json();
+                    if (data.success && data.data) {
+                        // Update the operators section with fetched data
+                        updateSpokeOperators(id, data.data);
+                    } else {
+                        operatorsCell.textContent = 'N/A';
+                    }
+                } catch (error) {
+                    console.error('Error loading spoke operators:', error);
+                    operatorsCell.textContent = 'Error';
+                }
+            }
         } else {
             element.style.display = 'none';
         }
+    }
+}
+
+// Update spoke operators after lazy loading
+function updateSpokeOperators(spokeDetailId, operators) {
+    const element = document.getElementById(spokeDetailId);
+    if (!element) return;
+    
+    const operatorCount = operators.length;
+    
+    // Group operators by name
+    const operatorMap = new Map();
+    operators.forEach(op => {
+        const key = op.displayName || op.name;
+        if (!operatorMap.has(key)) {
+            operatorMap.set(key, {
+                displayName: op.displayName || op.name,
+                version: op.version,
+                namespaces: [],
+                phase: op.phase
+            });
+        }
+        operatorMap.get(key).namespaces.push(op.namespace);
+    });
+    
+    const uniqueOperators = Array.from(operatorMap.values());
+    
+    // Update stat card
+    const statCard = element.querySelector('.lazy-operators-stat');
+    if (statCard) {
+        statCard.innerHTML = `<div class="spoke-stat-label" style="color: var(--badge-blue-text);">Operators</div><div style="font-size: 20px; font-weight: 700; color: var(--badge-blue-text);">${uniqueOperators.length}</div>`;
+    }
+    
+    // Update operators section
+    const operatorsSection = element.querySelector('.lazy-operators');
+    if (operatorsSection && operatorCount > 0) {
+        const tableHtml = `
+            <table style="width: 100%; font-size: 12px;">
+                <thead>
+                    <tr>
+                        <th>Operator</th>
+                        <th>Version</th>
+                        <th>Namespace</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${uniqueOperators.slice(0, 10).map(op => `
+                        <tr>
+                            <td><strong>${op.displayName}</strong></td>
+                            <td><code class="config-badge" style="font-size: 10px;">${op.version || 'N/A'}</code></td>
+                            <td style="font-size: 11px;">${op.namespaces.length === 1 ? op.namespaces[0] : `<span class="badge" style="font-size: 10px;">${op.namespaces.length} ns</span>`}</td>
+                            <td><span class="status ${op.phase === 'Succeeded' ? 'ready' : 'notready'}" style="font-size: 10px; padding: 2px 8px;">${op.phase || 'Unknown'}</span></td>
+                        </tr>
+                    `).join('')}
+                    ${uniqueOperators.length > 10 ? `<tr><td colspan="4" style="text-align: center; color: var(--text-secondary); font-size: 11px; padding: 8px;">... and ${uniqueOperators.length - 10} more operators</td></tr>` : ''}
+                </tbody>
+            </table>
+        `;
+        operatorsSection.innerHTML = tableHtml;
+    } else if (operatorsSection) {
+        operatorsSection.innerHTML = '<p style="color: var(--text-secondary); font-size: 12px; text-align: center; padding: 10px;">No operators installed</p>';
     }
 }
 
@@ -460,7 +536,8 @@ function toggleSpokeDetails(id) {
 function renderSpokeDetails(spoke, hubName) {
     const policyCount = spoke.policiesInfo?.length || 0;
     const compliantPolicies = (spoke.policiesInfo || []).filter(p => p.complianceState === 'Compliant').length;
-    const operatorCount = spoke.operatorsInfo?.length || 0;
+    // Operators will be lazy loaded
+    const operatorCount = 0;
     
     return `
         <div style="padding: 15px;">
@@ -490,9 +567,9 @@ function renderSpokeDetails(spoke, hubName) {
                     <div class="spoke-stat-label" style="color: var(--badge-green-text);">Policies</div>
                     <div style="font-size: 20px; font-weight: 700; color: var(--badge-green-text);">${compliantPolicies}/${policyCount}</div>
                 </div>
-                <div class="spoke-stat-card" style="background: var(--badge-blue-bg); border-color: var(--badge-blue-text);">
+                <div class="spoke-stat-card lazy-operators-stat" style="background: var(--badge-blue-bg); border-color: var(--badge-blue-text);">
                     <div class="spoke-stat-label" style="color: var(--badge-blue-text);">Operators</div>
-                    <div style="font-size: 20px; font-weight: 700; color: var(--badge-blue-text);">${operatorCount}</div>
+                    <div style="font-size: 20px; font-weight: 700; color: var(--badge-blue-text);">...</div>
                 </div>
             </div>
             
@@ -503,34 +580,12 @@ function renderSpokeDetails(spoke, hubName) {
             </div>
             ` : ''}
             
-            ${operatorCount > 0 ? `
             <div style="margin-bottom: 15px;">
-                <h4 style="color: var(--text-link); margin-bottom: 10px; font-size: 15px;">🔧 Operators (${operatorCount} installed)</h4>
-                <div style="max-height: 200px; overflow-y: auto;">
-                    <table style="width: 100%; font-size: 12px;">
-                        <thead>
-                            <tr>
-                                <th>Operator</th>
-                                <th>Version</th>
-                                <th>Namespace</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${(spoke.operatorsInfo || []).slice(0, 10).map(op => `
-                                <tr>
-                                    <td><strong>${op.displayName || op.name}</strong></td>
-                                    <td><code class="config-badge" style="font-size: 10px;">${op.version || 'N/A'}</code></td>
-                                    <td style="font-size: 11px;">${op.namespace}</td>
-                                    <td><span class="status ${op.phase === 'Succeeded' ? 'ready' : 'notready'}" style="font-size: 10px; padding: 2px 8px;">${op.phase || 'Unknown'}</span></td>
-                                </tr>
-                            `).join('')}
-                            ${operatorCount > 10 ? `<tr><td colspan="4" style="text-align: center; color: var(--text-secondary); font-size: 11px; padding: 8px;">... and ${operatorCount - 10} more operators</td></tr>` : ''}
-                        </tbody>
-                    </table>
+                <h4 style="color: var(--text-link); margin-bottom: 10px; font-size: 15px;">🔧 Operators</h4>
+                <div class="lazy-operators" style="max-height: 200px; overflow-y: auto; color: var(--text-secondary); text-align: center; padding: 20px;">
+                    Loading...
                 </div>
             </div>
-            ` : ''}
             
             ${policyCount > 0 ? `
             <div>

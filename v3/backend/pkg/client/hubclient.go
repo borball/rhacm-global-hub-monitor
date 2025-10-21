@@ -19,6 +19,11 @@ type HubClient struct {
 	hubName    string
 }
 
+// GetKubeClient returns the underlying KubeClient
+func (h *HubClient) GetKubeClient() *KubeClient {
+	return h.kubeClient
+}
+
 // NewHubClientFromSecret creates a new hub client from a kubeconfig secret
 func NewHubClientFromSecret(ctx context.Context, globalHubClient *KubeClient, hubName string) (*HubClient, error) {
 	// Get the kubeconfig secret from the hub's namespace
@@ -49,6 +54,26 @@ func NewHubClientFromSecret(ctx context.Context, globalHubClient *KubeClient, hu
 	return &HubClient{
 		kubeClient: kubeClient,
 		hubName:    hubName,
+	}, nil
+}
+
+// NewSpokeClientFromKubeconfig creates a spoke client from kubeconfig bytes
+func NewSpokeClientFromKubeconfig(kubeconfigData []byte, spokeName string) (*HubClient, error) {
+	// Build config from kubeconfig data (same as NewHubClientFromSecret)
+	config, err := clientcmd.RESTConfigFromKubeConfig(kubeconfigData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build config from kubeconfig: %w", err)
+	}
+
+	// Create Kubernetes client
+	kubeClient, err := NewKubeClientFromConfig(config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create client for spoke %s: %w", spokeName, err)
+	}
+
+	return &HubClient{
+		kubeClient: kubeClient,
+		hubName:    spokeName,
 	}, nil
 }
 
@@ -104,9 +129,4 @@ func (h *HubClient) GetNodesForCluster(ctx context.Context, namespace string) ([
 	}
 
 	return allNodes, nil
-}
-
-// GetKubeClient returns the underlying KubeClient
-func (h *HubClient) GetKubeClient() *KubeClient {
-	return h.kubeClient
 }
