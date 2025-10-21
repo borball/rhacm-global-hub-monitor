@@ -520,11 +520,11 @@ a:hover {
 /* Code blocks */
 .code-block {
     background: var(--bg-tertiary);
-    padding: 10px;
+    padding: 6px;
     border-radius: 4px;
     font-family: 'Courier New', monospace;
     font-size: 12px;
-    line-height: 1.6;
+    line-height: 1.5;
     color: var(--text-primary);
     max-height: 150px;
     overflow-y: auto;
