@@ -6,16 +6,42 @@
 
 body {
     font-family: 'Red Hat Display', 'Overpass', 'Helvetica Neue', Arial, sans-serif;
-    background: #f0f0f0;
-    color: #151515;
+    background: var(--bg-primary);
+    color: var(--text-primary);
     line-height: 1.5;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .header {
     background: linear-gradient(135deg, #0066cc 0%, #004080 100%);
     color: white;
     padding: 2rem 0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.header .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.theme-toggle {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.theme-toggle:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
 }
 
 .header h1 {
@@ -56,11 +82,11 @@ body {
 }
 
 .card {
-    background: white;
+    background: var(--bg-secondary);
     border-radius: 8px;
     padding: 24px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 4px var(--shadow);
+    transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s ease;
 }
 
 .card:hover {
@@ -93,8 +119,9 @@ body {
 }
 
 .status.notready {
-    background: #fef0e6;
-    color: #ec7a08;
+    background: var(--status-notready-bg);
+    color: var(--status-notready-text);
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .info-row {
