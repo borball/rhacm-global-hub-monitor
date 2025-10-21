@@ -76,7 +76,12 @@ function renderHubsList(hubs) {
     // Only show Managed Hubs section if there are managed hubs
     if (managedHubs.length > 0) {
         html += `
-            <h2 class="section-title">Managed Hubs</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 class="section-title" style="margin: 0;">Managed Hubs</h2>
+                <button class="btn btn-secondary" onclick="refreshHubs()" style="padding: 8px 16px;">
+                    🔄 Refresh
+                </button>
+            </div>
             <div class="grid">
         `;
         
