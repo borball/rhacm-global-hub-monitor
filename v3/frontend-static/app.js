@@ -429,7 +429,7 @@ function renderSpokes(spokes, hubName) {
                 </td>
             </tr>
             <tr id="${spokeDetailId}" class="spoke-detail-row" style="display: none;">
-                <td colspan="8" style="padding: 0;">
+                <td colspan="9" style="padding: 0;">
                     ${renderSpokeDetails(spoke, hubName)}
                 </td>
             </tr>
