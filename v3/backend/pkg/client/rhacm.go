@@ -211,13 +211,13 @@ func (r *RHACMClient) GetManagedHubs(ctx context.Context) ([]models.ManagedHub, 
 			Annotations:     cluster.Annotations,
 			CreatedAt:       cluster.CreationTimestamp.Time,
 		}
-		
+
 		// Enrich with remote data (ClusterVersion, routes, nodes, etc.)
 		hubClient, err := NewHubClientFromSecret(ctx, r.kubeClient, cluster.Name)
 		if err == nil {
 			r.enrichHubWithRemoteData(ctx, hub, hubClient)
 		}
-		
+
 		hubs = append(hubs, *hub)
 	}
 
@@ -410,11 +410,22 @@ func (r *RHACMClient) getSpokesClustersFromHub(ctx context.Context, hubName stri
 		}
 		mc.NodesInfo = spokeNodes
 
-		// Fetch operators for this spoke from the hub in the spoke's namespace
-		spokeOperators, err := hubClient.kubeClient.GetOperatorsForNamespace(ctx, cluster.Name)
-		if err != nil {
-			fmt.Printf("Warning: Could not fetch operators for spoke %s: %v\n", cluster.Name, err)
-			spokeOperators = []models.OperatorInfo{}
+		// Try to fetch operators directly from spoke cluster
+		// First, try to get spoke kubeconfig from hub
+		spokeOperators := []models.OperatorInfo{}
+		spokeClient, err := NewHubClientFromSecret(ctx, r.kubeClient, cluster.Name)
+		if err == nil {
+			// Successfully connected to spoke, fetch operators
+			operators, err := spokeClient.kubeClient.GetOperators(ctx)
+			if err == nil {
+				spokeOperators = operators
+				fmt.Printf("Info: Fetched %d operators from spoke %s\n", len(operators), cluster.Name)
+			} else {
+				fmt.Printf("Warning: Could not fetch operators from spoke %s: %v\n", cluster.Name, err)
+			}
+		} else {
+			// No kubeconfig for spoke, can't fetch operators
+			fmt.Printf("Info: No kubeconfig for spoke %s, operators unavailable\n", cluster.Name)
 		}
 		mc.OperatorsInfo = spokeOperators
 
