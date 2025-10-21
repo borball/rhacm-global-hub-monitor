@@ -220,12 +220,14 @@ func (r *RHACMClient) discoverUnmanagedHubs(ctx context.Context, existingHubs ma
 				}
 			}
 
-			// Get console URL from console route
+			// Get console and GitOps URLs from routes
 			routeGVR := schema.GroupVersionResource{
 				Group:    "route.openshift.io",
 				Version:  "v1",
 				Resource: "routes",
 			}
+			
+			// Get console URL
 			route, err := hubClient.kubeClient.DynamicClient.Resource(routeGVR).Namespace("openshift-console").Get(ctx, "console", metav1.GetOptions{})
 			if err == nil {
 				if spec, found, _ := unstructured.NestedMap(route.Object, "spec"); found {
@@ -234,16 +236,15 @@ func (r *RHACMClient) discoverUnmanagedHubs(ctx context.Context, existingHubs ma
 					}
 				}
 			}
-
-			// Get GitOps console URL from openshift-gitops namespace
+			
+			// Get GitOps console URL
 			gitopsRoutes, err := hubClient.kubeClient.DynamicClient.Resource(routeGVR).Namespace("openshift-gitops").List(ctx, metav1.ListOptions{})
 			if err == nil && len(gitopsRoutes.Items) > 0 {
-				// Look for server route (usually first route or one with 'server' in name)
 				for _, route := range gitopsRoutes.Items {
 					if spec, found, _ := unstructured.NestedMap(route.Object, "spec"); found {
 						if host, found, _ := unstructured.NestedString(spec, "host"); found {
 							hub.ClusterInfo.GitOpsURL = "https://" + host
-							break // Use first route found
+							break
 						}
 					}
 				}
@@ -332,7 +333,7 @@ func (r *RHACMClient) GetManagedHub(ctx context.Context, name string) (*models.M
 		fmt.Printf("Warning: Could not create hub client for %s: %v\n", name, err)
 		return hub, nil
 	}
-	
+
 	// Get nodes
 	nodes, err := hubClient.kubeClient.GetNodes(ctx)
 	if err != nil {
@@ -384,7 +385,7 @@ func (r *RHACMClient) GetManagedHub(ctx context.Context, name string) (*models.M
 				}
 			}
 		}
-		
+
 		// Get GitOps console URL
 		gitopsRoutes, err := hubClient.kubeClient.DynamicClient.Resource(routeGVR).Namespace("openshift-gitops").List(ctx, metav1.ListOptions{})
 		if err != nil {
