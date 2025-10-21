@@ -563,9 +563,9 @@ function renderSpokeDetails(spoke, hubName) {
                     <div class="spoke-stat-label">Config</div>
                     <div class="spoke-stat-value">${spoke.clusterInfo.region || 'N/A'}</div>
                 </div>
-                <div class="spoke-stat-card" style="background: var(--badge-green-bg); border-color: var(--badge-green-text);">
-                    <div class="spoke-stat-label" style="color: var(--badge-green-text);">Policies</div>
-                    <div style="font-size: 20px; font-weight: 700; color: var(--badge-green-text);">${compliantPolicies}/${policyCount}</div>
+                <div class="spoke-stat-card" style="background: ${compliantPolicies === policyCount ? 'var(--badge-green-bg)' : 'var(--status-notready-bg)'}; border-color: ${compliantPolicies === policyCount ? 'var(--badge-green-text)' : 'var(--status-notready-text)'};">
+                    <div class="spoke-stat-label" style="color: ${compliantPolicies === policyCount ? 'var(--badge-green-text)' : 'var(--status-notready-text)'};">Policies</div>
+                    <div style="font-size: 20px; font-weight: 700; color: ${compliantPolicies === policyCount ? 'var(--badge-green-text)' : 'var(--status-notready-text)'};">${compliantPolicies}/${policyCount}</div>
                 </div>
                 <div class="spoke-stat-card lazy-operators-stat" style="background: var(--badge-blue-bg); border-color: var(--badge-blue-text);">
                     <div class="spoke-stat-label" style="color: var(--badge-blue-text);">Operators</div>
