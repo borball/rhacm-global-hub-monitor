@@ -192,3 +192,4 @@ All features tested and verified working correctly. Performance improvements del
 *Test conducted by: Automated testing suite*  
 *Next version: v3 (in preparation)*
 
+
