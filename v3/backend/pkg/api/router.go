@@ -44,6 +44,7 @@ func SetupRouter(
 			hubs.POST("/add", hubManagementHandler.AddHub)
 			hubs.DELETE("/:name/remove", hubManagementHandler.RemoveHub)
 			hubs.GET("/:name/spokes/:spoke/operators", spokeHandler.GetSpokeOperators)
+			hubs.POST("/refresh", hubHandler.RefreshHubsCache)
 		}
 
 		// Policy endpoints

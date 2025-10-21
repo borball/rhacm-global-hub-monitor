@@ -148,9 +148,14 @@ function renderHubsList(hubs) {
         <div style="${topMargin}">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2 class="section-title" style="margin: 0;">Unmanaged Hubs</h2>
-                <button class="btn btn-primary" onclick="showAddHubForm()" style="padding: 10px 20px;">
-                    ➕ Add Hub
-                </button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-secondary" onclick="refreshHubs()" style="padding: 8px 16px;">
+                        🔄 Refresh
+                    </button>
+                    <button class="btn btn-primary" onclick="showAddHubForm()" style="padding: 10px 20px;">
+                        ➕ Add Hub
+                    </button>
+                </div>
             </div>
     `;
     
@@ -1746,6 +1751,20 @@ async function submitAddHub(event) {
         }
     } catch (error) {
         alert('❌ Error adding hub: ' + error.message);
+    }
+}
+
+// Refresh hubs (clears cache and reloads)
+async function refreshHubs() {
+    try {
+        // Call refresh endpoint to clear cache
+        await fetch(`${API_BASE}/hubs/refresh`, { method: 'POST' });
+        // Reload hubs data
+        fetchHubs();
+    } catch (error) {
+        console.error('Error refreshing hubs:', error);
+        // Reload anyway
+        fetchHubs();
     }
 }
 

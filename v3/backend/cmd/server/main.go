@@ -13,7 +13,6 @@ import (
 	"github.com/rhacm-global-hub-monitor/backend/internal/config"
 	"github.com/rhacm-global-hub-monitor/backend/pkg/api"
 	"github.com/rhacm-global-hub-monitor/backend/pkg/auth"
-	"github.com/rhacm-global-hub-monitor/backend/pkg/cache"
 	"github.com/rhacm-global-hub-monitor/backend/pkg/client"
 	"github.com/rhacm-global-hub-monitor/backend/pkg/handlers"
 )

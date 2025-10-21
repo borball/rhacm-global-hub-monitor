@@ -20,7 +20,7 @@ type HubHandler struct {
 func NewHubHandler(rhacmClient *client.RHACMClient) *HubHandler {
 	return &HubHandler{
 		rhacmClient: rhacmClient,
-		cache:       cache.NewCache(90 * time.Second), // Cache for 90 seconds
+		cache:       cache.NewCache(30 * time.Minute), // Cache for 30 minutes
 	}
 }
 
@@ -135,5 +135,14 @@ func (h *HubHandler) ListHubClusters(c *gin.Context) {
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
 		Data:    clusters,
+	})
+}
+
+// RefreshHubsCache clears the hubs list cache
+func (h *HubHandler) RefreshHubsCache(c *gin.Context) {
+	h.cache.Delete("hubs:list")
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data:    "Cache cleared",
 	})
 }
