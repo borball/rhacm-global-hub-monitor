@@ -24,6 +24,104 @@ func NewRHACMClient(kubeClient *KubeClient) *RHACMClient {
 	}
 }
 
+// enrichHubWithRemoteData fetches detailed information from a hub cluster
+// This is used by both managed and unmanaged hubs to avoid code duplication
+func (r *RHACMClient) enrichHubWithRemoteData(ctx context.Context, hub *models.ManagedHub, hubClient *HubClient) error {
+	// Get ClusterVersion for OpenShift version and Cluster ID
+	cvGVR := schema.GroupVersionResource{
+		Group:    "config.openshift.io",
+		Version:  "v1",
+		Resource: "clusterversions",
+	}
+	cvList, err := hubClient.kubeClient.DynamicClient.Resource(cvGVR).List(ctx, metav1.ListOptions{})
+	if err == nil && len(cvList.Items) > 0 {
+		// Get OpenShift version
+		if status, found, _ := unstructured.NestedMap(cvList.Items[0].Object, "status"); found {
+			if desired, found, _ := unstructured.NestedMap(status, "desired"); found {
+				if version, found, _ := unstructured.NestedString(desired, "version"); found {
+					hub.ClusterInfo.OpenshiftVersion = version
+				}
+			}
+		}
+		// Get Cluster ID
+		if spec, found, _ := unstructured.NestedMap(cvList.Items[0].Object, "spec"); found {
+			if clusterID, found, _ := unstructured.NestedString(spec, "clusterID"); found {
+				hub.ClusterInfo.ClusterID = clusterID
+			}
+		}
+	}
+
+	// Get console and GitOps URLs from routes
+	routeGVR := schema.GroupVersionResource{
+		Group:    "route.openshift.io",
+		Version:  "v1",
+		Resource: "routes",
+	}
+
+	// Get console URL
+	consoleRoute, err := hubClient.kubeClient.DynamicClient.Resource(routeGVR).Namespace("openshift-console").Get(ctx, "console", metav1.GetOptions{})
+	if err == nil {
+		if spec, found, _ := unstructured.NestedMap(consoleRoute.Object, "spec"); found {
+			if host, found, _ := unstructured.NestedString(spec, "host"); found {
+				hub.ClusterInfo.ConsoleURL = "https://" + host
+				fmt.Printf("Info: Console URL for %s: %s\n", hub.Name, hub.ClusterInfo.ConsoleURL)
+			}
+		}
+	} else {
+		fmt.Printf("Warning: Could not fetch console route for %s: %v\n", hub.Name, err)
+	}
+
+	// Get GitOps console URL
+	gitopsRoutes, err := hubClient.kubeClient.DynamicClient.Resource(routeGVR).Namespace("openshift-gitops").List(ctx, metav1.ListOptions{})
+	if err == nil && len(gitopsRoutes.Items) > 0 {
+		for _, route := range gitopsRoutes.Items {
+			if spec, found, _ := unstructured.NestedMap(route.Object, "spec"); found {
+				if host, found, _ := unstructured.NestedString(spec, "host"); found {
+					hub.ClusterInfo.GitOpsURL = "https://" + host
+					fmt.Printf("Info: GitOps URL for %s: %s\n", hub.Name, hub.ClusterInfo.GitOpsURL)
+					break
+				}
+			}
+		}
+	} else if err != nil {
+		fmt.Printf("Warning: Could not fetch GitOps routes for %s: %v\n", hub.Name, err)
+	}
+
+	// Get nodes
+	nodes, err := hubClient.kubeClient.GetNodes(ctx)
+	if err == nil && len(nodes.Items) > 0 {
+		hub.Status = "Connected"
+		hub.Version = nodes.Items[0].Status.NodeInfo.KubeletVersion
+		hub.ClusterInfo.KubernetesVersion = nodes.Items[0].Status.NodeInfo.KubeletVersion
+
+		// Convert all nodes
+		for i := range nodes.Items {
+			nodeInfo := ConvertNodeToNodeInfo(&nodes.Items[i])
+			if nodeInfo.Annotations == nil {
+				nodeInfo.Annotations = make(map[string]string)
+			}
+			nodeInfo.Annotations["data-source"] = "Node"
+			hub.NodesInfo = append(hub.NodesInfo, nodeInfo)
+		}
+	} else if err != nil {
+		fmt.Printf("Warning: Could not fetch nodes for %s: %v\n", hub.Name, err)
+	}
+
+	// Get spoke clusters
+	spokes, err := r.getSpokesClustersFromHub(ctx, hub.Name)
+	if err == nil {
+		hub.ManagedClusters = spokes
+	}
+
+	// Get policies
+	policies, err := hubClient.kubeClient.GetPoliciesForNamespace(ctx, hub.Name)
+	if err == nil {
+		hub.PoliciesInfo = policies
+	}
+
+	return nil
+}
+
 // GetManagedHubs returns all managed hub clusters
 func (r *RHACMClient) GetManagedHubs(ctx context.Context) ([]models.ManagedHub, error) {
 	// Get all managed clusters once
