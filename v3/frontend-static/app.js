@@ -207,10 +207,10 @@ function renderHubsList(hubs) {
     } else {
         // Empty state
         html += `
-            <div class="card" style="padding: 40px; text-align: center; background: #f9f9f9;">
+            <div class="card" style="padding: 40px; text-align: center; background: var(--bg-tertiary);">
                 <div style="font-size: 48px; margin-bottom: 15px; opacity: 0.5;">📦</div>
-                <h3 style="color: #6a6e73; margin-bottom: 10px;">No Unmanaged Hubs</h3>
-                <p style="color: #6a6e73; margin-bottom: 20px;">
+                <h3 style="color: var(--text-secondary); margin-bottom: 10px;">No Unmanaged Hubs</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">
                     ${managedHubs.length === 0 ? 'No hubs discovered automatically.' : 'Add external hub clusters by providing their kubeconfig.'}<br>
                     ${managedHubs.length === 0 ? 'Add your first hub to start monitoring.' : 'These hubs will be monitored without being managed by this Global Hub.'}
                 </p>
@@ -338,21 +338,21 @@ function renderSpokes(spokes, hubName) {
         <div class="card" style="margin-bottom: 20px; padding: 20px;">
             <div style="display: grid; grid-template-columns: repeat(3, 1fr) auto; gap: 15px; align-items: end;">
                 <div>
-                    <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #6a6e73;">🔍 Search by Cluster Name</label>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600; color: var(--text-secondary);">🔍 Search by Cluster Name</label>
                     <input type="text" id="search-cluster-name" placeholder="Enter cluster name..." 
-                           style="width: 100%; padding: 10px; border: 1px solid #d2d2d2; border-radius: 4px; font-size: 14px;"
+                           style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; background: var(--bg-secondary); color: var(--text-primary);"
                            onkeyup="filterSpokes()">
                 </div>
                 <div>
-                    <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #6a6e73;">🏷️ Search by Version</label>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600; color: var(--text-secondary);">🏷️ Search by Version</label>
                     <input type="text" id="search-version" placeholder="e.g., 4.18.13..." 
-                           style="width: 100%; padding: 10px; border: 1px solid #d2d2d2; border-radius: 4px; font-size: 14px;"
+                           style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; background: var(--bg-secondary); color: var(--text-primary);"
                            onkeyup="filterSpokes()">
                 </div>
                 <div>
-                    <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #6a6e73;">⚙️ Search by Configuration</label>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600; color: var(--text-secondary);">⚙️ Search by Configuration</label>
                     <input type="text" id="search-configuration" placeholder="e.g., vdu2-4.18..." 
-                           style="width: 100%; padding: 10px; border: 1px solid #d2d2d2; border-radius: 4px; font-size: 14px;"
+                           style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; background: var(--bg-secondary); color: var(--text-primary);"
                            onkeyup="filterSpokes()">
                 </div>
                 <div>
@@ -361,7 +361,7 @@ function renderSpokes(spokes, hubName) {
                     </button>
                 </div>
             </div>
-            <div id="spoke-count" style="margin-top: 15px; color: #6a6e73; font-size: 14px;">
+            <div id="spoke-count" style="margin-top: 15px; color: var(--text-secondary); font-size: 14px;">
                 Showing ${spokes.length} spoke cluster${spokes.length !== 1 ? 's' : ''}
             </div>
         </div>
@@ -406,7 +406,7 @@ function renderSpokes(spokes, hubName) {
                 </td>
             </tr>
             <tr id="${spokeDetailId}" class="spoke-detail-row" style="display: none;">
-                <td colspan="8" style="background: #f9f9f9; padding: 0;">
+                <td colspan="8" style="background: var(--bg-tertiary); padding: 0;">
                     ${renderSpokeDetails(spoke, hubName)}
                 </td>
             </tr>
@@ -442,8 +442,8 @@ function renderSpokeDetails(spoke, hubName) {
         <div style="padding: 15px;">
             <!-- Compact Info Grid -->
             <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 15px;">
-                <div style="padding: 10px; background: white; border-radius: 4px; border: 1px solid #d2d2d2;">
-                    <div style="font-size: 10px; color: #6a6e73; text-transform: uppercase;">Type</div>
+                <div class="spoke-stat-card">
+                    <div class="spoke-stat-label">Type</div>
                     <div style="font-size: 13px; font-weight: 600;">SNO</div>
                 </div>
                 <div style="padding: 10px; background: white; border-radius: 4px; border: 1px solid #d2d2d2;">
