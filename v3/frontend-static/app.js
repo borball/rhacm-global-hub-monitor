@@ -81,7 +81,7 @@ function renderHubsList(hubs) {
         `;
         
         managedHubs.forEach(hub => {
-        const statusClass = hub.status.toLowerCase().includes('ready') ? 'ready' : 'notready';
+        const statusClass = hub.status.toLowerCase().includes('ready') || hub.status.toLowerCase().includes('connected') ? 'ready' : 'notready';
         const spokeCount = hub.managedClusters?.length || 0;
         const policyCount = hub.policiesInfo?.length || 0;
         
@@ -248,7 +248,7 @@ async function showHubDetails(hubName) {
 
 // Render hub details view
 function renderHubDetails(hub) {
-    const statusClass = hub.status.toLowerCase().includes('ready') ? 'ready' : 'notready';
+    const statusClass = hub.status.toLowerCase().includes('ready') || hub.status.toLowerCase().includes('connected') ? 'ready' : 'notready';
     const spokeCount = hub.managedClusters?.length || 0;
     const policyCount = hub.policiesInfo?.length || 0;
     
@@ -300,7 +300,7 @@ function renderHubOverview(hub) {
         <div class="card">
             <h3>Cluster Information</h3>
             <div class="info-row"><span class="label">Name:</span> <span class="value">${hub.name}</span></div>
-            <div class="info-row"><span class="label">Status:</span> <span class="value"><span class="status ${hub.status.toLowerCase().includes('ready') ? 'ready' : 'notready'}">${hub.status}</span></span></div>
+            <div class="info-row"><span class="label">Status:</span> <span class="value"><span class="status ${hub.status.toLowerCase().includes('ready') || hub.status.toLowerCase().includes('connected') ? 'ready' : 'notready'}">${hub.status}</span></span></div>
             <div class="info-row"><span class="label">Kubernetes Version:</span> <span class="value">${hub.version || 'N/A'}</span></div>
             <div class="info-row"><span class="label">OpenShift Version:</span> <span class="value">${hub.clusterInfo.openshiftVersion || 'N/A'}</span></div>
             <div class="info-row"><span class="label">Platform:</span> <span class="value">${hub.clusterInfo.platform || 'N/A'}</span></div>
