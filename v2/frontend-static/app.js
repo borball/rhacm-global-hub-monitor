@@ -917,11 +917,19 @@ function renderSpokeHardwareCompact(nodes) {
             <div style="padding: 10px; background: #f9f9f9; border-radius: 4px;">
                 <strong>🌐 IP:</strong> ${node.internalIP || 'N/A'}
             </div>
-            ${node.annotations?.['bmc-address'] || node.annotations?.manufacturer || node.annotations?.['serial-number'] ? `
-            <div style="padding: 10px; background: #f9f9f9; border-radius: 4px; grid-column: 1 / -1; display: flex; gap: 20px; flex-wrap: wrap; font-size: 13px;">
-                ${node.annotations?.['bmc-address'] ? `<span><strong>🔧 BMC:</strong> <code style="font-size: 11px;">${node.annotations['bmc-address']}</code></span>` : ''}
-                ${node.annotations?.manufacturer ? `<span><strong>🏭 Vendor:</strong> ${node.annotations.manufacturer}</span>` : ''}
-                ${node.annotations?.['serial-number'] ? `<span><strong>📋 S/N:</strong> <code>${node.annotations['serial-number']}</code></span>` : ''}
+            ${node.annotations?.['bmc-address'] ? `
+            <div style="padding: 10px; background: #f9f9f9; border-radius: 4px; grid-column: 1 / 3;">
+                <strong>🔧 BMC:</strong> <code style="font-size: 11px;">${node.annotations['bmc-address']}</code>
+            </div>
+            ` : ''}
+            ${node.annotations?.manufacturer ? `
+            <div style="padding: 10px; background: #f9f9f9; border-radius: 4px;">
+                <strong>🏭 Vendor:</strong> ${node.annotations.manufacturer}
+            </div>
+            ` : ''}
+            ${node.annotations?.['serial-number'] ? `
+            <div style="padding: 10px; background: #f9f9f9; border-radius: 4px;">
+                <strong>📋 S/N:</strong> <code>${node.annotations['serial-number']}</code>
             </div>
             ` : ''}
         `;
