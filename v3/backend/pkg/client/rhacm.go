@@ -532,7 +532,11 @@ func getClusterStatus(cluster *clusterv1.ManagedCluster) string {
 			if condition.Status == metav1.ConditionTrue {
 				return "Ready"
 			}
-			return "NotReady"
+			if condition.Status == metav1.ConditionFalse {
+				return "NotReady"
+			}
+			// ConditionUnknown
+			return "Unknown"
 		}
 	}
 	return "Unknown"

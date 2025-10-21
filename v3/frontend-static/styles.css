@@ -182,6 +182,12 @@ body {
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+.status.unknown {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
 .info-row {
     margin: 12px 0;
     padding: 10px 0;

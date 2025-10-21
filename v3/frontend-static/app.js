@@ -399,7 +399,8 @@ function renderSpokes(spokes, hubName) {
     `;
     
     spokes.forEach((spoke, spokeIndex) => {
-        const statusClass = spoke.status.toLowerCase() === 'ready' ? 'ready' : 'notready';
+        const status = spoke.status.toLowerCase();
+        const statusClass = status === 'ready' ? 'ready' : (status === 'unknown' ? 'unknown' : 'notready');
         const policyCount = spoke.policiesInfo?.length || 0;
         const nodeCount = spoke.nodesInfo?.length || 0;
         const compliantPolicies = (spoke.policiesInfo || []).filter(p => p.complianceState === 'Compliant').length;
