@@ -143,8 +143,9 @@ body {
 
 .label {
     font-weight: 600;
-    color: #6a6e73;
+    color: var(--text-secondary);
     min-width: 140px;
+    transition: color 0.3s ease;
 }
 
 .value {
