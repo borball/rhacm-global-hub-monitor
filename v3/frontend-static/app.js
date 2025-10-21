@@ -406,7 +406,7 @@ function renderSpokes(spokes, hubName) {
                 </td>
             </tr>
             <tr id="${spokeDetailId}" class="spoke-detail-row" style="display: none;">
-                <td colspan="8" style="background: var(--bg-tertiary); padding: 0;">
+                <td colspan="8" style="padding: 0;">
                     ${renderSpokeDetails(spoke, hubName)}
                 </td>
             </tr>
@@ -481,11 +481,11 @@ function renderSpokeDetails(spoke, hubName) {
                     <h4 style="color: #0066cc; margin: 0; font-size: 15px;">📋 Policies (${policyCount} total, ${compliantPolicies} compliant)</h4>
                 </div>
                 
-                <div style="margin-bottom: 15px; padding: 12px; background: white; border-radius: 4px; border: 1px solid #d2d2d2;">
+                <div class="policy-summary-card" style="margin-bottom: 15px;">
                     <div style="display: flex; gap: 12px; align-items: center;">
                         <div style="flex: 1;">
                             <input type="text" id="search-spoke-policy-name" placeholder="🔍 Search policy name..." 
-                                   style="width: 100%; padding: 8px; border: 1px solid #d2d2d2; border-radius: 4px; font-size: 13px;"
+                                   style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 13px; background: var(--bg-secondary); color: var(--text-primary);"
                                    onkeyup="filterSpokePolicies()">
                         </div>
                         <div style="display: flex; gap: 10px;">
@@ -836,7 +836,7 @@ function renderSpokePolicyList(policies, hubName) {
                 </td>
             </tr>
             <tr id="${spokePolicyDetailId}" style="display: none;" class="spoke-policy-detail-row">
-                <td colspan="5" style="background: #f0f0f0; padding: 15px;">
+                <td colspan="5" style="padding: 15px;">
                     ${renderPolicyDetails(policy)}
                 </td>
             </tr>

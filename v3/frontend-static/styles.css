@@ -469,6 +469,14 @@ a:hover {
     background: var(--bg-tertiary) !important;
 }
 
+.spoke-policy-detail-row {
+    background: var(--bg-tertiary) !important;
+}
+
+.spoke-policy-detail-row td {
+    background: var(--bg-tertiary) !important;
+}
+
 /* Summary cards in policy details */
 .policy-summary-card {
     padding: 15px;
@@ -510,4 +518,37 @@ a:hover {
     overflow-y: auto;
     white-space: pre-wrap;
     word-break: break-word;
+}
+
+/* Homepage statistics cards */
+.stat-card {
+    text-align: center;
+    background: var(--bg-secondary) !important;
+    border-left: 4px solid #0066cc;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    border-left-width: 6px;
+}
+
+.stat-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-link);
+    margin: 10px 0;
+}
+
+.stat-card small {
+    color: var(--text-secondary);
+    font-size: 13px;
 }
