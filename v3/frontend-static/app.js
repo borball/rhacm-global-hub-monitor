@@ -906,30 +906,30 @@ function renderSpokeHardwareCompact(nodes) {
     let html = '<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 13px;">';
     nodes.forEach(node => {
         html += `
-            <div style="padding: 10px; background: #f9f9f9; border-radius: 4px;">
+            <div class="hardware-grid-item">
                 <strong>💻 CPU:</strong> ${node.capacity?.cpu || 'N/A'}
             </div>
-            <div style="padding: 10px; background: #f9f9f9; border-radius: 4px;">
+            <div class="hardware-grid-item">
                 <strong>🧠 RAM:</strong> ${node.capacity?.memory || 'N/A'}
             </div>
-            <div style="padding: 10px; background: #f9f9f9; border-radius: 4px;">
+            <div class="hardware-grid-item">
                 <strong>💾 Storage:</strong> ${node.capacity?.storage || 'N/A'}
             </div>
-            <div style="padding: 10px; background: #f9f9f9; border-radius: 4px;">
+            <div class="hardware-grid-item">
                 <strong>🌐 IP:</strong> ${node.internalIP || 'N/A'}
             </div>
             ${node.annotations?.['bmc-address'] ? `
-            <div style="padding: 10px; background: #f9f9f9; border-radius: 4px; grid-column: 1 / 3;">
+            <div class="hardware-grid-item" style="grid-column: 1 / 3;">
                 <strong>🔧 BMC:</strong> <code style="font-size: 11px;">${node.annotations['bmc-address']}</code>
             </div>
             ` : ''}
             ${node.annotations?.manufacturer ? `
-            <div style="padding: 10px; background: #f9f9f9; border-radius: 4px;">
+            <div class="hardware-grid-item">
                 <strong>🏭 Vendor:</strong> ${node.annotations.manufacturer}
             </div>
             ` : ''}
             ${node.annotations?.['serial-number'] ? `
-            <div style="padding: 10px; background: #f9f9f9; border-radius: 4px;">
+            <div class="hardware-grid-item">
                 <strong>📋 S/N:</strong> <code>${node.annotations['serial-number']}</code>
             </div>
             ` : ''}
