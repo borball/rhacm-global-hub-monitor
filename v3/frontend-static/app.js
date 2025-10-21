@@ -132,12 +132,17 @@ function renderHubsList(hubs) {
                     ${hub.clusterInfo.consoleURL ? `<a href="${hub.clusterInfo.consoleURL}" target="_blank" class="console-link">🖥️ Console</a>` : '<span></span>'}
                     ${hub.clusterInfo.gitopsURL ? `<a href="${hub.clusterInfo.gitopsURL}" target="_blank" class="console-link">🔄 GitOps</a>` : '<span></span>'}
                 </div>
-                ` : ''}
-                <button class="btn btn-primary" onclick="showHubDetails('${hub.name}')" style="width: 100%; margin-top: 12px;">
-                    View Details
-                </button>
-            </div>
-        `;
+                        ` : ''}
+                        <div style="display: flex; gap: 8px; margin-top: 12px;">
+                            <button class="btn btn-secondary" onclick="refreshHub('${hub.name}')" style="flex: 0 0 auto; padding: 10px 16px;" title="Refresh this hub">
+                                🔄
+                            </button>
+                            <button class="btn btn-primary" onclick="showHubDetails('${hub.name}')" style="flex: 1;">
+                                View Details
+                            </button>
+                        </div>
+                    </div>
+                `;
         });
         
         html += '</div></div>'; // Close grid and managed-hubs-section
