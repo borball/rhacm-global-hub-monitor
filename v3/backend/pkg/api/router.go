@@ -42,11 +42,11 @@ func SetupRouter(
 			hubs.GET("/:name/clusters", hubHandler.ListHubClusters)
 			hubs.POST("/add", hubManagementHandler.AddHub)
 			hubs.DELETE("/:name/remove", hubManagementHandler.RemoveHub)
-			
-			// Lazy loading endpoint for spoke operators
-			spokeHandler := handlers.NewSpokeHandler(rhacmClient, kubeClient)
-			hubs.GET("/:hub/spokes/:spoke/operators", spokeHandler.GetSpokeOperators)
 		}
+		
+		// Spoke lazy loading endpoints
+		spokeHandler := handlers.NewSpokeHandler(rhacmClient, kubeClient)
+		v1.GET("/hubs/:hub/spokes/:spoke/operators", spokeHandler.GetSpokeOperators)
 
 		// Policy endpoints
 		policies := v1.Group("/policies")
