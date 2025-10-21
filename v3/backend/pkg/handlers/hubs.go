@@ -138,11 +138,12 @@ func (h *HubHandler) ListHubClusters(c *gin.Context) {
 	})
 }
 
-// RefreshHubsCache clears the hubs list cache
-func (h *HubHandler) RefreshHubsCache(c *gin.Context) {
-	h.cache.Delete("hubs:list")
+// RefreshHubCache clears the cache for a specific hub
+func (h *HubHandler) RefreshHubCache(c *gin.Context) {
+	hubName := c.Param("name")
+	h.cache.Delete("hub:" + hubName)
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
-		Data:    "Cache cleared",
+		Data:    "Cache cleared for hub: " + hubName,
 	})
 }

@@ -76,12 +76,7 @@ function renderHubsList(hubs) {
     // Only show Managed Hubs section if there are managed hubs
     if (managedHubs.length > 0) {
         html += `
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 class="section-title" style="margin: 0;">Managed Hubs</h2>
-                <button class="btn btn-secondary" onclick="refreshHubs()" style="padding: 8px 16px;">
-                    🔄 Refresh
-                </button>
-            </div>
+            <h2 class="section-title">Managed Hubs</h2>
             <div class="managed-hubs-section">
                 <div class="grid">
         `;
@@ -154,14 +149,9 @@ function renderHubsList(hubs) {
         <div style="${topMargin}">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2 class="section-title" style="margin: 0;">Unmanaged Hubs</h2>
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-secondary" onclick="refreshHubs()" style="padding: 8px 16px;">
-                        🔄 Refresh
-                    </button>
-                    <button class="btn btn-primary" onclick="showAddHubForm()" style="padding: 10px 20px;">
-                        ➕ Add Hub
-                    </button>
-                </div>
+                <button class="btn btn-primary" onclick="showAddHubForm()" style="padding: 10px 20px;">
+                    ➕ Add Hub
+                </button>
             </div>
             <div class="unmanaged-hubs-section">
     `;
@@ -1761,38 +1751,104 @@ async function submitAddHub(event) {
     }
 }
 
-// Refresh hubs (clears cache and reloads only hub sections)
-async function refreshHubs() {
-    // Show loading state in hub sections
-    const managedSection = document.querySelector('.managed-hubs-section');
-    const unmanagedSection = document.querySelector('.unmanaged-hubs-section');
+// Refresh single hub (clears cache for that hub and reloads its card)
+async function refreshHub(hubName) {
+    // Find the hub card element
+    const cards = document.querySelectorAll('.card');
+    let hubCard = null;
     
-    if (managedSection) {
-        managedSection.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">🔄 Refreshing...</div>';
+    for (const card of cards) {
+        const heading = card.querySelector('h3 span');
+        if (heading && heading.textContent === hubName) {
+            hubCard = card;
+            break;
+        }
     }
-    if (unmanagedSection) {
-        unmanagedSection.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">🔄 Refreshing...</div>';
-    }
+    
+    if (!hubCard) return;
+    
+    // Show loading state in the card
+    const originalContent = hubCard.innerHTML;
+    hubCard.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">🔄 Refreshing...</div>';
     
     try {
-        // Call refresh endpoint to clear cache
-        await fetch(`${API_BASE}/hubs/refresh`, { method: 'POST' });
+        // Clear cache for this specific hub
+        await fetch(`${API_BASE}/hubs/${hubName}/refresh`, { method: 'POST' });
         
-        // Fetch fresh hub data
-        const response = await fetch(`${API_BASE}/hubs`);
+        // Fetch fresh data for this hub
+        const response = await fetch(`${API_BASE}/hubs/${hubName}`);
         const data = await response.json();
         
         if (data.success && data.data) {
-            // Re-render only the hub sections
-            renderHubSections(data.data);
+            // Re-render just this hub card
+            renderHubCard(data.data, hubCard);
         } else {
-            throw new Error(data.error || 'Failed to fetch hubs');
+            throw new Error(data.error || 'Failed to fetch hub');
         }
     } catch (error) {
-        console.error('Error refreshing hubs:', error);
-        // Fall back to full page reload on error
-        fetchHubs();
+        console.error('Error refreshing hub:', error);
+        // Restore original content on error
+        hubCard.innerHTML = originalContent;
+        alert('Failed to refresh hub: ' + error.message);
     }
+}
+
+// Render a single hub card
+function renderHubCard(hub, cardElement) {
+    const statusClass = (hub.status.toLowerCase().includes('ready') || hub.status.toLowerCase().includes('connected')) ? 'ready' : (hub.status.toLowerCase() === 'unknown' ? 'unknown' : 'notready');
+    const spokeCount = hub.managedClusters?.length || 0;
+    const policyCount = hub.policiesInfo?.length || 0;
+    
+    const uniqueHostnames = new Set();
+    (hub.nodesInfo || []).forEach(node => {
+        uniqueHostnames.add(node.name.split('.')[0]);
+    });
+    const nodeCount = uniqueHostnames.size;
+    
+    let html = `
+        <h3>
+            <span>${hub.name}</span>
+            <span class="status ${statusClass}">${hub.status}</span>
+        </h3>
+        <div class="info-row">
+            <span class="label">OpenShift Version:</span>
+            <span class="value">${hub.clusterInfo.openshiftVersion || 'N/A'}</span>
+        </div>
+        <div class="info-row">
+            <span class="label">Kubernetes:</span>
+            <span class="value">${hub.version || 'N/A'}</span>
+        </div>
+        ${hub.clusterInfo.region ? '<div class="info-row"><span class="label">Configuration:</span><span class="value"><code class="config-badge">' + hub.clusterInfo.region + '</code></span></div>' : ''}
+        <div class="info-row">
+            <span class="label">Nodes:</span>
+            <span class="value"><span class="badge">${nodeCount}</span></span>
+        </div>
+        ${policyCount > 0 ? '<div class="info-row"><span class="label">Policies:</span><span class="value"><span class="badge success">' + policyCount + '</span></span></div>' : ''}
+        <div class="info-row">
+            <span class="label">Spoke Clusters:</span>
+            <span class="value"><span class="badge">${spokeCount}</span></span>
+        </div>
+    `;
+    
+    if (hub.clusterInfo.consoleURL || hub.clusterInfo.gitopsURL) {
+        html += '<div class="info-row" style="display: flex; gap: 10px; justify-content: space-between;">';
+        html += hub.clusterInfo.consoleURL ? '<a href="' + hub.clusterInfo.consoleURL + '" target="_blank" class="console-link">🖥️ Console</a>' : '<span></span>';
+        html += hub.clusterInfo.gitopsURL ? '<a href="' + hub.clusterInfo.gitopsURL + '" target="_blank" class="console-link">🔄 GitOps</a>' : '<span></span>';
+        html += '</div>';
+    }
+    
+    html += `
+        <div style="display: flex; gap: 8px; margin-top: 12px;">
+            <button class="btn btn-secondary" onclick="refreshHub('${hub.name}')" style="flex: 0 0 auto; padding: 10px 16px;" title="Refresh this hub">
+                🔄
+            </button>
+            <button class="btn btn-primary" onclick="showHubDetails('${hub.name}')" style="flex: 1;">
+                View Details
+            </button>
+        </div>
+    `;
+    
+    cardElement.innerHTML = html;
 }
 
 // Render just the hub sections (for refresh)
