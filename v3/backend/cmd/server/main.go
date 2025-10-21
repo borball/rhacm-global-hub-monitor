@@ -45,8 +45,11 @@ func main() {
 		}
 	}
 
+	// Create shared cache instance (30 minute TTL)
+	sharedCache := cache.NewCache(30 * time.Minute)
+
 	// Initialize handlers
-	hubHandler := handlers.NewHubHandler(rhacmClient)
+	hubHandler := handlers.NewHubHandler(rhacmClient, sharedCache)
 	healthHandler := handlers.NewHealthHandler()
 	policyHandler := handlers.NewPolicyHandler(kubeClient, rhacmClient)
 	cguHandler := handlers.NewCGUHandler(kubeClient, rhacmClient)
