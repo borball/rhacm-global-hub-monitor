@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/rhacm-global-hub-monitor/backend/pkg/models"
 	corev1 "k8s.io/api/core/v1"
