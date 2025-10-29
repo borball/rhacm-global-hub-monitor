@@ -128,7 +128,7 @@ func (h *HubManagementHandler) AddHub(c *gin.Context) {
 	}
 
 	// Try to create, if exists then update
-	_, err = h.kubeClient.ClientSet.CoreV1().Secrets(req.HubName).Create(ctx, secret, metav1.CreateOptions{})
+	_, err = h.kubeClient.ClientSet.CoreV1().Secrets(secretNamespace).Create(ctx, secret, metav1.CreateOptions{})
 	if err != nil {
 		if isAlreadyExistsError(err) {
 			// Secret exists, update it
