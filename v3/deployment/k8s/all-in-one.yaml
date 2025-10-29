@@ -251,7 +251,7 @@ spec:
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: hubs-rhacm-monitor
+  name: hubs
   namespace: rhacm-monitor
   labels:
     app: rhacm-monitor
