@@ -16,8 +16,11 @@ metadata:
   name: rhacm-monitor
 rules:
 - apiGroups: [""]
-  resources: ["nodes", "secrets", "namespaces"]
+  resources: ["nodes"]
   verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get", "list", "create"]
 - apiGroups: [""]
   resources: ["secrets"]
   verbs: ["get", "list", "create", "delete"]

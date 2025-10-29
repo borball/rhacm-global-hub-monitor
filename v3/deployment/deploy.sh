@@ -82,3 +82,4 @@ echo ""
 
 echo "🎉 RHACM Global Hub Monitor v3.0.0 is ready!"
 
+
