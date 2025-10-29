@@ -10,6 +10,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	clusterv1 "open-cluster-management.io/api/cluster/v1"
 )
 
@@ -106,17 +107,23 @@ func NewHubClientFromKubeconfigData(kubeconfigData []byte, hubName string) (*Hub
 	// Handle client authentication (priority order: cert, token, basic)
 	if len(authInfo.ClientCertificateData) > 0 && len(authInfo.ClientKeyData) > 0 {
 		// Client certificate auth
+		fmt.Printf("Debug: %s using client certificate auth\n", hubName)
 		restConfig.TLSClientConfig.CertData = authInfo.ClientCertificateData
 		restConfig.TLSClientConfig.KeyData = authInfo.ClientKeyData
 	} else if authInfo.Token != "" {
 		// Bearer token auth
+		fmt.Printf("Debug: %s using bearer token auth\n", hubName)
 		restConfig.BearerToken = authInfo.Token
 	} else if authInfo.TokenFile != "" {
+		fmt.Printf("Debug: %s using token file auth\n", hubName)
 		restConfig.BearerTokenFile = authInfo.TokenFile
 	} else if authInfo.Username != "" {
 		// Basic auth
+		fmt.Printf("Debug: %s using basic auth (user: %s)\n", hubName, authInfo.Username)
 		restConfig.Username = authInfo.Username
 		restConfig.Password = authInfo.Password
+	} else {
+		fmt.Printf("Warning: %s has no valid authentication method in kubeconfig!\n", hubName)
 	}
 	
 	// Create client
