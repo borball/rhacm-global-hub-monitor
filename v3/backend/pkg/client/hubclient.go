@@ -39,52 +39,95 @@ func NewHubClientFromSecret(ctx context.Context, globalHubClient *KubeClient, hu
 		return nil, fmt.Errorf("kubeconfig not found in secret %s/%s", hubName, secretName)
 	}
 
-	// Build config from kubeconfig data using proper clientcmd
-	clientConfig, err := clientcmd.NewClientConfigFromBytes(kubeconfigData)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse kubeconfig: %w", err)
-	}
-	
-	config, err := clientConfig.ClientConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to build config from kubeconfig: %w", err)
-	}
-
-	// Create Kubernetes client with the hub's kubeconfig
-	kubeClient, err := NewKubeClientFromConfig(config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create client for hub %s: %w", hubName, err)
-	}
-
-	return &HubClient{
-		kubeClient: kubeClient,
-		hubName:    hubName,
-	}, nil
+	// Use improved authentication parsing
+	return NewHubClientFromKubeconfigData(kubeconfigData, hubName)
 }
 
 // NewSpokeClientFromKubeconfig creates a spoke client from kubeconfig bytes
 func NewSpokeClientFromKubeconfig(kubeconfigData []byte, spokeName string) (*HubClient, error) {
-	// Build config from kubeconfig data
-	// Use Load + BuildConfigFromFlags for proper authentication handling
-	kubeConfig, err := clientcmd.Load(kubeconfigData)
+	// Use improved authentication parsing
+	return NewHubClientFromKubeconfigData(kubeconfigData, spokeName)
+}
+
+// NewHubClientFromKubeconfigData creates a hub client from kubeconfig bytes with proper authentication
+// This is the v4 fix for system:anonymous issue
+func NewHubClientFromKubeconfigData(kubeconfigData []byte, hubName string) (*HubClient, error) {
+	// Parse kubeconfig
+	config, err := clientcmd.Load(kubeconfigData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load kubeconfig: %w", err)
 	}
 	
-	config, err := clientcmd.NewDefaultClientConfig(*kubeConfig, &clientcmd.ConfigOverrides{}).ClientConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to build config from kubeconfig: %w", err)
+	// Determine which context to use
+	contextName := config.CurrentContext
+	if contextName == "" {
+		// Use first available context
+		for name := range config.Contexts {
+			contextName = name
+			break
+		}
 	}
-
-	// Create Kubernetes client
-	kubeClient, err := NewKubeClientFromConfig(config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create client for spoke %s: %w", spokeName, err)
+	
+	if contextName == "" {
+		return nil, fmt.Errorf("no context found in kubeconfig")
 	}
-
+	
+	context := config.Contexts[contextName]
+	if context == nil {
+		return nil, fmt.Errorf("context %s not found", contextName)
+	}
+	
+	cluster := config.Clusters[context.Cluster]
+	if cluster == nil {
+		return nil, fmt.Errorf("cluster %s not found", context.Cluster)
+	}
+	
+	authInfo := config.AuthInfos[context.AuthInfo]
+	if authInfo == nil {
+		return nil, fmt.Errorf("user %s not found", context.AuthInfo)
+	}
+	
+	// Build REST config with explicit auth
+	restConfig := &rest.Config{
+		Host: cluster.Server,
+		TLSClientConfig: rest.TLSClientConfig{
+			Insecure:   cluster.InsecureSkipTLSVerify,
+			ServerName: cluster.TLSServerName,
+		},
+	}
+	
+	// Handle CA certificate
+	if len(cluster.CertificateAuthorityData) > 0 {
+		restConfig.TLSClientConfig.CAData = cluster.CertificateAuthorityData
+	} else if cluster.CertificateAuthority != "" {
+		restConfig.TLSClientConfig.CAFile = cluster.CertificateAuthority
+	}
+	
+	// Handle client authentication (priority order: cert, token, basic)
+	if len(authInfo.ClientCertificateData) > 0 && len(authInfo.ClientKeyData) > 0 {
+		// Client certificate auth
+		restConfig.TLSClientConfig.CertData = authInfo.ClientCertificateData
+		restConfig.TLSClientConfig.KeyData = authInfo.ClientKeyData
+	} else if authInfo.Token != "" {
+		// Bearer token auth
+		restConfig.BearerToken = authInfo.Token
+	} else if authInfo.TokenFile != "" {
+		restConfig.BearerTokenFile = authInfo.TokenFile
+	} else if authInfo.Username != "" {
+		// Basic auth
+		restConfig.Username = authInfo.Username
+		restConfig.Password = authInfo.Password
+	}
+	
+	// Create client
+	kubeClient, err := NewKubeClientFromConfig(restConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create client: %w", err)
+	}
+	
 	return &HubClient{
 		kubeClient: kubeClient,
-		hubName:    spokeName,
+		hubName:    hubName,
 	}, nil
 }
 
