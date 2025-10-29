@@ -39,8 +39,13 @@ func NewHubClientFromSecret(ctx context.Context, globalHubClient *KubeClient, hu
 		return nil, fmt.Errorf("kubeconfig not found in secret %s/%s", hubName, secretName)
 	}
 
-	// Build config from kubeconfig data
-	config, err := clientcmd.RESTConfigFromKubeConfig(kubeconfigData)
+	// Build config from kubeconfig data using proper clientcmd
+	clientConfig, err := clientcmd.NewClientConfigFromBytes(kubeconfigData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse kubeconfig: %w", err)
+	}
+	
+	config, err := clientConfig.ClientConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build config from kubeconfig: %w", err)
 	}
@@ -59,8 +64,13 @@ func NewHubClientFromSecret(ctx context.Context, globalHubClient *KubeClient, hu
 
 // NewSpokeClientFromKubeconfig creates a spoke client from kubeconfig bytes
 func NewSpokeClientFromKubeconfig(kubeconfigData []byte, spokeName string) (*HubClient, error) {
-	// Build config from kubeconfig data (same as NewHubClientFromSecret)
-	config, err := clientcmd.RESTConfigFromKubeConfig(kubeconfigData)
+	// Build config from kubeconfig data using proper clientcmd
+	clientConfig, err := clientcmd.NewClientConfigFromBytes(kubeconfigData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse kubeconfig: %w", err)
+	}
+	
+	config, err := clientConfig.ClientConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build config from kubeconfig: %w", err)
 	}
