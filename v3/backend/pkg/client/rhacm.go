@@ -269,8 +269,8 @@ func (r *RHACMClient) discoverUnmanagedHubs(ctx context.Context, existingHubs ma
 
 		// This is a manually added hub - try to connect and get basic info
 		hub := models.ManagedHub{
-			Name:      nsName,
-			Namespace: nsName,
+			Name:      hubName,
+			Namespace: hubName,
 			Status:    "External",
 			Version:   "Unknown",
 			Labels: map[string]string{
@@ -287,11 +287,13 @@ func (r *RHACMClient) discoverUnmanagedHubs(ctx context.Context, existingHubs ma
 			ManagedClusters: nil,
 		}
 
-		// Try to connect and get complete information
-		hubClient, err := NewHubClientFromSecret(ctx, r.kubeClient, nsName)
-		if err == nil {
-			// Use common enrichment function
-			r.enrichHubWithRemoteData(ctx, &hub, hubClient)
+		// Try to connect and get complete information using the secret directly
+		if secret.Data["kubeconfig"] != nil {
+			hubClient, err := NewSpokeClientFromKubeconfig(secret.Data["kubeconfig"], hubName)
+			if err == nil {
+				// Use common enrichment function
+				r.enrichHubWithRemoteData(ctx, &hub, hubClient)
+			}
 		}
 
 		unmanagedHubs = append(unmanagedHubs, hub)
@@ -308,9 +310,9 @@ func (r *RHACMClient) GetManagedHub(ctx context.Context, name string) (*models.M
 		return r.convertToManagedHub(ctx, cluster)
 	}
 
-	// Not found as ManagedCluster, check if it's a manually added hub
+	// Not found as ManagedCluster, check if it's a manually added hub in rhacm-monitor namespace
 	secretName := name + "-admin-kubeconfig"
-	secret, err := r.kubeClient.ClientSet.CoreV1().Secrets(name).Get(ctx, secretName, metav1.GetOptions{})
+	secret, err := r.kubeClient.ClientSet.CoreV1().Secrets("rhacm-monitor").Get(ctx, secretName, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("hub not found as ManagedCluster or manual hub: %w", err)
 	}
