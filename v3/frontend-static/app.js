@@ -1751,7 +1751,8 @@ async function submitAddHub(event) {
                 `Secret: ${data.data.secretName}\n\n` +
                 `The hub will appear in the list after refresh.`
             );
-            // Reload hubs list
+            // Clear client-side cache and reload hubs list
+            delete window.cachedHubsData;
             fetchHubs();
         } else {
             alert('❌ Failed to add hub: ' + (data.error || 'Unknown error'));
