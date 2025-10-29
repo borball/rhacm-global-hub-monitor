@@ -96,9 +96,8 @@ v3/
 ## Container Images
 
 **Backend:**
-- `quay.io/bzhai/rhacm-monitor-backend:v3.0.0` (specific release)
-- `quay.io/bzhai/rhacm-monitor-backend:v3` (v3 latest)
-- `quay.io/bzhai/rhacm-monitor-backend:latest` (overall latest)
+- `quay.io/bzhai/rhacm-monitor-backend:latest` (recommended - latest stable)
+- `quay.io/bzhai/rhacm-monitor-backend:v3` (v3 branch)
 
 **Frontend:**
 - Static files served via Nginx
@@ -111,7 +110,7 @@ v3/
 **Backend update:**
 ```bash
 oc set image deployment/rhacm-monitor-backend \
-  rhacm-monitor-backend=quay.io/bzhai/rhacm-monitor-backend:v3.0.0 \
+  rhacm-monitor-backend=quay.io/bzhai/rhacm-monitor-backend:latest \
   -n rhacm-monitor
 ```
 

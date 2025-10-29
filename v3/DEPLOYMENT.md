@@ -44,9 +44,8 @@ This guide covers deploying the RHACM Global Hub Monitor v3.0.0 to your OpenShif
 **Repository:** `quay.io/bzhai/rhacm-monitor-backend`
 
 **Available Tags:**
-- `v3.0.0` - Specific v3.0.0 release
-- `v3` - Latest v3.x version
-- `latest` - Latest stable version
+- `latest` - Latest stable version (recommended)
+- `v3` - v3 branch latest
 
 **Image Contents:**
 - Go binary (backend server)
@@ -519,7 +518,7 @@ Expected:
 ```bash
 # Using latest image
 oc set image deployment/rhacm-monitor-backend \
-  rhacm-monitor-backend=quay.io/bzhai/rhacm-monitor-backend:v3.0.0 \
+  rhacm-monitor-backend=quay.io/bzhai/rhacm-monitor-backend:latest \
   -n rhacm-monitor
 
 # Verify rollout
