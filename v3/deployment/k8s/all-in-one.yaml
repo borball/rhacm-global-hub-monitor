@@ -248,11 +248,12 @@ spec:
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: rhacm-monitor
+  name: hubs
   namespace: rhacm-monitor
   labels:
     app: rhacm-monitor
 spec:
+  host: hubs-rhacm-monitor.apps.vhub.outbound.vz.bos2.lab
   to:
     kind: Service
     name: rhacm-monitor-frontend
