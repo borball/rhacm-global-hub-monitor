@@ -64,13 +64,14 @@ func NewHubClientFromSecret(ctx context.Context, globalHubClient *KubeClient, hu
 
 // NewSpokeClientFromKubeconfig creates a spoke client from kubeconfig bytes
 func NewSpokeClientFromKubeconfig(kubeconfigData []byte, spokeName string) (*HubClient, error) {
-	// Build config from kubeconfig data using proper clientcmd
-	clientConfig, err := clientcmd.NewClientConfigFromBytes(kubeconfigData)
+	// Build config from kubeconfig data
+	// Use Load + BuildConfigFromFlags for proper authentication handling
+	kubeConfig, err := clientcmd.Load(kubeconfigData)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse kubeconfig: %w", err)
+		return nil, fmt.Errorf("failed to load kubeconfig: %w", err)
 	}
 	
-	config, err := clientConfig.ClientConfig()
+	config, err := clientcmd.NewDefaultClientConfig(*kubeConfig, &clientcmd.ConfigOverrides{}).ClientConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build config from kubeconfig: %w", err)
 	}
