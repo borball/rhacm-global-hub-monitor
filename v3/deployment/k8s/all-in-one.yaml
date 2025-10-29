@@ -164,7 +164,7 @@ data:
             listen 8080;
             
             location / {
-                root /var/www/html;
+                root /opt/app-root/src;
                 index index.html;
                 try_files $uri $uri/ /index.html;
             }
@@ -201,12 +201,13 @@ spec:
       containers:
       - name: nginx
         image: registry.access.redhat.com/ubi9/nginx-120:latest
+        command: ["nginx", "-g", "daemon off;"]
         ports:
         - containerPort: 8080
           name: http
         volumeMounts:
         - name: html
-          mountPath: /var/www/html
+          mountPath: /opt/app-root/src
         - name: nginx-conf
           mountPath: /etc/nginx/nginx.conf
           subPath: nginx.conf
