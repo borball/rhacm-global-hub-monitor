@@ -10,7 +10,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	_ "k8s.io/client-go/tools/clientcmd/api" // Will be used for exec plugins in future
 	clusterv1 "open-cluster-management.io/api/cluster/v1"
 )
 
