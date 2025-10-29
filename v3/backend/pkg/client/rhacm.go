@@ -236,7 +236,7 @@ func (r *RHACMClient) GetManagedHubs(ctx context.Context) ([]models.ManagedHub, 
 	return hubs, nil
 }
 
-// discoverUnmanagedHubs finds hubs that were manually added via kubeconfig secrets
+// discoverHubsFromSecrets finds hubs that were manually added via kubeconfig secrets
 func (r *RHACMClient) discoverUnmanagedHubs(ctx context.Context, existingHubs map[string]bool) ([]models.ManagedHub, error) {
 	var unmanagedHubs []models.ManagedHub
 
@@ -267,6 +267,9 @@ func (r *RHACMClient) discoverUnmanagedHubs(ctx context.Context, existingHubs ma
 			continue
 		}
 
+		// Extract hub name from secret name pattern
+		hubName := strings.TrimSuffix(secret.Name, "-admin-kubeconfig")
+		
 		// This is a manually added hub - try to connect and get basic info
 		hub := models.ManagedHub{
 			Name:      hubName,

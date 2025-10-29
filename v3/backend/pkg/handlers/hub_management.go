@@ -96,27 +96,14 @@ func (h *HubManagementHandler) AddHub(c *gin.Context) {
 		return
 	}
 
-	// Create namespace if it doesn't exist
-	namespace := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: req.HubName,
-		},
-	}
-	_, err = h.kubeClient.ClientSet.CoreV1().Namespaces().Create(ctx, namespace, metav1.CreateOptions{})
-	if err != nil && !isAlreadyExistsError(err) {
-		c.JSON(http.StatusInternalServerError, models.APIResponse{
-			Success: false,
-			Error:   "Failed to create namespace: " + err.Error(),
-		})
-		return
-	}
-
-	// Create or update kubeconfig secret
+	// Store secret in rhacm-monitor namespace (no separate namespace per hub)
+	secretNamespace := "rhacm-monitor"
 	secretName := fmt.Sprintf("%s-admin-kubeconfig", req.HubName)
+	
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
-			Namespace: req.HubName,
+			Namespace: secretNamespace,
 			Labels: map[string]string{
 				"created-by": "rhacm-monitor",
 			},
@@ -132,7 +119,7 @@ func (h *HubManagementHandler) AddHub(c *gin.Context) {
 	if err != nil {
 		if isAlreadyExistsError(err) {
 			// Secret exists, update it
-			_, err = h.kubeClient.ClientSet.CoreV1().Secrets(req.HubName).Update(ctx, secret, metav1.UpdateOptions{})
+			_, err = h.kubeClient.ClientSet.CoreV1().Secrets(secretNamespace).Update(ctx, secret, metav1.UpdateOptions{})
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, models.APIResponse{
 					Success: false,
@@ -154,7 +141,7 @@ func (h *HubManagementHandler) AddHub(c *gin.Context) {
 		Message: fmt.Sprintf("Hub '%s' added successfully", req.HubName),
 		Data: map[string]interface{}{
 			"hubName":    req.HubName,
-			"namespace":  req.HubName,
+			"namespace":  secretNamespace,
 			"secretName": secretName,
 		},
 	})
@@ -172,9 +159,9 @@ func (h *HubManagementHandler) RemoveHub(c *gin.Context) {
 	ctx := c.Request.Context()
 	hubName := c.Param("name")
 
-	// Delete the kubeconfig secret
+	// Delete the kubeconfig secret from rhacm-monitor namespace
 	secretName := fmt.Sprintf("%s-admin-kubeconfig", hubName)
-	err := h.kubeClient.ClientSet.CoreV1().Secrets(hubName).Delete(ctx, secretName, metav1.DeleteOptions{})
+	err := h.kubeClient.ClientSet.CoreV1().Secrets("rhacm-monitor").Delete(ctx, secretName, metav1.DeleteOptions{})
 	if err != nil && !isNotFoundError(err) {
 		c.JSON(http.StatusInternalServerError, models.APIResponse{
 			Success: false,
