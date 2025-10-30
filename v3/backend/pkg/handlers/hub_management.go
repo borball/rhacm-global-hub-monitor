@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/base64"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -48,6 +49,7 @@ type AddHubRequest struct {
 // @Router /api/hubs/add [post]
 func (h *HubManagementHandler) AddHub(c *gin.Context) {
 	ctx := c.Request.Context()
+	log.Println("DEBUG AddHub: Function called")
 
 	var req AddHubRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -100,6 +102,8 @@ func (h *HubManagementHandler) AddHub(c *gin.Context) {
 	secretNamespace := "rhacm-monitor"
 	secretName := fmt.Sprintf("%s-admin-kubeconfig", req.HubName)
 	
+	log.Printf("DEBUG AddHub: hubName=%s, secretName=%s, secretNamespace=%s", req.HubName, secretName, secretNamespace)
+	
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
@@ -115,7 +119,9 @@ func (h *HubManagementHandler) AddHub(c *gin.Context) {
 	}
 
 	// Try to create, if exists then update
+	log.Printf("DEBUG AddHub: Creating secret %s in namespace %s", secretName, secretNamespace)
 	_, err = h.kubeClient.ClientSet.CoreV1().Secrets(secretNamespace).Create(ctx, secret, metav1.CreateOptions{})
+	log.Printf("DEBUG AddHub: Create result - error: %v", err)
 	if err != nil {
 		if isAlreadyExistsError(err) {
 			// Secret exists, update it
