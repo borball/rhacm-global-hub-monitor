@@ -27,17 +27,22 @@ func (h *HubClient) GetKubeClient() *KubeClient {
 
 // NewHubClientFromSecret creates a new hub client from a kubeconfig secret
 func NewHubClientFromSecret(ctx context.Context, globalHubClient *KubeClient, hubName string) (*HubClient, error) {
-	// Get the kubeconfig secret from the hub's namespace
 	secretName := fmt.Sprintf("%s-admin-kubeconfig", hubName)
+	
+	// Try hub's namespace first (for managed hubs)
 	secret, err := globalHubClient.ClientSet.CoreV1().Secrets(hubName).Get(ctx, secretName, metav1.GetOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get kubeconfig secret %s/%s: %w", hubName, secretName, err)
+		// If not found, try rhacm-monitor namespace (for unmanaged hubs)
+		secret, err = globalHubClient.ClientSet.CoreV1().Secrets("rhacm-monitor").Get(ctx, secretName, metav1.GetOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("failed to get kubeconfig secret in %s or rhacm-monitor namespace: %w", hubName, err)
+		}
 	}
 
 	// Get the kubeconfig data
 	kubeconfigData, ok := secret.Data["kubeconfig"]
 	if !ok {
-		return nil, fmt.Errorf("kubeconfig not found in secret %s/%s", hubName, secretName)
+		return nil, fmt.Errorf("kubeconfig not found in secret %s", secretName)
 	}
 
 	// Use improved authentication parsing
@@ -107,24 +112,36 @@ func NewHubClientFromKubeconfigData(kubeconfigData []byte, hubName string) (*Hub
 	// Handle client authentication (priority order: cert, token, basic)
 	if len(authInfo.ClientCertificateData) > 0 && len(authInfo.ClientKeyData) > 0 {
 		// Client certificate auth
-		fmt.Printf("Debug: %s using client certificate auth\n", hubName)
+		fmt.Printf("Debug: %s using client certificate auth (cert len=%d, key len=%d)\n", 
+			hubName, len(authInfo.ClientCertificateData), len(authInfo.ClientKeyData))
 		restConfig.TLSClientConfig.CertData = authInfo.ClientCertificateData
 		restConfig.TLSClientConfig.KeyData = authInfo.ClientKeyData
 	} else if authInfo.Token != "" {
 		// Bearer token auth
-		fmt.Printf("Debug: %s using bearer token auth\n", hubName)
+		fmt.Printf("Debug: %s using bearer token auth (token len=%d)\n", hubName, len(authInfo.Token))
 		restConfig.BearerToken = authInfo.Token
 	} else if authInfo.TokenFile != "" {
-		fmt.Printf("Debug: %s using token file auth\n", hubName)
+		fmt.Printf("Debug: %s using token file auth (file=%s)\n", hubName, authInfo.TokenFile)
 		restConfig.BearerTokenFile = authInfo.TokenFile
 	} else if authInfo.Username != "" {
-		// Basic auth
-		fmt.Printf("Debug: %s using basic auth (user: %s)\n", hubName, authInfo.Username)
+		// Basic auth - Note: rest.Config.Username/Password are deprecated
+		// We need to use a token instead or create a custom transport
+		fmt.Printf("Debug: %s has basic auth (user: %s) - converting to token\n", hubName, authInfo.Username)
+		
+		// For now, set on config (may not work with all client-go versions)
 		restConfig.Username = authInfo.Username
 		restConfig.Password = authInfo.Password
+		
+		// Also try setting as Basic Auth header via Impersonate (workaround)
+		// This is a limitation - basic auth support varies by client-go version
+		fmt.Printf("Warning: %s using basic auth which may not be fully supported by client-go\n", hubName)
 	} else {
 		fmt.Printf("Warning: %s has no valid authentication method in kubeconfig!\n", hubName)
 	}
+	
+	fmt.Printf("Debug: %s REST config final - Host=%s, Username=%s, Token=%s, Cert=%v\n",
+		hubName, restConfig.Host, restConfig.Username, 
+		(restConfig.BearerToken != ""), (len(restConfig.TLSClientConfig.CertData) > 0))
 	
 	// Create client
 	kubeClient, err := NewKubeClientFromConfig(restConfig)

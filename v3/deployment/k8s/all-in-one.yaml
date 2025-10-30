@@ -23,7 +23,7 @@ rules:
   verbs: ["get", "list", "create"]
 - apiGroups: [""]
   resources: ["secrets"]
-  verbs: ["get", "list", "create", "delete"]
+  verbs: ["get", "list", "create", "update", "delete"]
 - apiGroups: ["cluster.open-cluster-management.io"]
   resources: ["managedclusters"]
   verbs: ["get", "list"]
