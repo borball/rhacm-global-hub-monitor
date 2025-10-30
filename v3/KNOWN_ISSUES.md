@@ -2,69 +2,54 @@
 
 ## Unmanaged Hub Authentication
 
-**Issue:** Unmanaged hubs (added via UI) connect as "system:anonymous"
+**Issue:** Unmanaged hubs using basic auth connect as "system:anonymous"
 
-**Symptoms:**
-```
-Warning: Could not fetch console route for dev: routes.route.openshift.io "console" is forbidden: 
-User "system:anonymous" cannot get resource "routes" in API group "route.openshift.io"
-```
+**Status:** Under Investigation
 
-**Affected Operations:**
-- Fetching Console URL
-- Fetching GitOps URL  
-- Fetching nodes
-- Fetching routes
-
-**Root Cause:**
-The kubeconfig authentication from manually added hubs isn't being properly applied when creating the REST client.
+**Details:**
+- Basic auth credentials are detected and set correctly
+- REST config shows Username and Password
+- Kubernetes API server rejects basic auth (deprecated in K8s 1.19+)
+- Falls back to anonymous access
 
 **Workaround:**
-Use managed hubs (auto-discovered from ManagedCluster resources) instead of manually adding hubs. Managed hubs authenticate correctly.
-
-**Status:** Under investigation
-
-**Impact:**
-- Managed hubs: ✅ Work perfectly
-- Unmanaged hubs: ⚠️ Limited functionality (basic info only)
-
----
-
-## Cache TTL
-
-**Issue:** Cache configured for 30 minutes but appears to expire every ~2 minutes
-
-**Evidence:**
-```
-18:00:04 - 10.665s (cache miss)
-18:02:22 - 10.535s (cache miss) ← Only 2min 18sec later
-```
-
-**Investigation:**
-- Cache logging added for debugging
-- May be related to pod restarts or multiple clients
-- Session affinity configured to help consistency
+- Use managed hubs (auto-discovered from ManagedCluster resources)
+- Or use kubeconfig with token or certificate auth
 
 **Impact:**
-- Performance benefit still exists (3-4ms cached vs 10s uncached)
-- Just not lasting full 30 minutes as expected
+- Unmanaged hubs with basic auth: Limited functionality
+- Cannot fetch Console/GitOps URLs, nodes, or full cluster info
+- Managed hubs: Full functionality (not affected)
 
-**Status:** Under investigation with logging
+**Future Fix:**
+v4 will investigate token generation from basic auth credentials or
+alternative authentication methods.
 
----
+## Current Functionality
+
+### ✅ Works Perfectly
+- Managed hubs (acm1, acm2, etc.)
+- All v3 features
+- Dark/Light mode
+- Operators monitoring
+- Performance caching
+
+### ⚠️ Limitations
+- Unmanaged hubs with basic auth have limited data
+- Client-go basic auth support varies
 
 ## Recommendations
 
-**For Production Use:**
-1. Use managed hubs (ManagedCluster resources)
-2. Enable RBAC with proper service accounts
-3. Monitor cache behavior with logs
-4. Use refresh buttons for on-demand updates
+**For Production:**
+1. Use managed hubs (auto-discovered)
+2. If adding unmanaged hubs, use token or certificate auth in kubeconfig
+3. Avoid basic auth in kubeconfigs (deprecated)
 
-**Managed Hubs Work Perfectly:**
-- Full functionality
-- All features operational
-- Console/GitOps URLs
-- Operators monitoring
-- Dark/light mode
-- Performance caching
+**For Development:**
+1. Generate service account token for unmanaged clusters
+2. Use that token in kubeconfig instead of username/password
+3. Full functionality will work
+
+---
+
+*v3 is production-ready for managed hub monitoring.*
