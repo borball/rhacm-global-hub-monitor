@@ -237,39 +237,32 @@ func (r *RHACMClient) GetManagedHubs(ctx context.Context) ([]models.ManagedHub, 
 	return hubs, nil
 }
 
-// discoverHubsFromSecrets finds hubs that were manually added via kubeconfig secrets
+// discoverHubsFromSecrets finds hubs that were manually added via kubeconfig secrets in rhacm-monitor namespace
 func (r *RHACMClient) discoverUnmanagedHubs(ctx context.Context, existingHubs map[string]bool) ([]models.ManagedHub, error) {
 	var unmanagedHubs []models.ManagedHub
 
-	// List all namespaces
-	namespaces, err := r.kubeClient.ClientSet.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
+	// List secrets in rhacm-monitor namespace with our label
+	secrets, err := r.kubeClient.ClientSet.CoreV1().Secrets("rhacm-monitor").List(ctx, metav1.ListOptions{
+		LabelSelector: "created-by=rhacm-monitor",
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	// Check each namespace for admin-kubeconfig secret
-	for _, ns := range namespaces.Items {
-		nsName := ns.Name
-
-		// Skip system namespaces and already discovered hubs
-		if existingHubs[nsName] || nsName == "default" || nsName == "kube-system" || nsName == "openshift" || len(nsName) > 20 && nsName[:10] == "openshift-" {
+	// Check each secret
+	for _, secret := range secrets.Items {
+		// Skip if not a kubeconfig secret (pattern: {hub-name}-admin-kubeconfig)
+		if !strings.HasSuffix(secret.Name, "-admin-kubeconfig") {
 			continue
 		}
-
-		// Look for {namespace}-admin-kubeconfig secret
-		secretName := nsName + "-admin-kubeconfig"
-		secret, err := r.kubeClient.ClientSet.CoreV1().Secrets(nsName).Get(ctx, secretName, metav1.GetOptions{})
-		if err != nil {
-			continue // Secret doesn't exist, not a hub
-		}
-
-		// Check if created by rhacm-monitor
-		if secret.Labels == nil || secret.Labels["created-by"] != "rhacm-monitor" {
-			continue
-		}
-
-		// Extract hub name from secret name pattern
+		
+		// Extract hub name from secret name
 		hubName := strings.TrimSuffix(secret.Name, "-admin-kubeconfig")
+		
+		// Skip if already discovered as managed hub
+		if existingHubs[hubName] {
+			continue
+		}
 		
 		// This is a manually added hub - try to connect and get basic info
 		hub := models.ManagedHub{
